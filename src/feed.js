@@ -61,17 +61,41 @@ function gauss(r) {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-// Live source: free GeckoTerminal OHLCV. Returns closing prices oldest..newest.
-// Network-only; callers in the offline experiment use synthSeries instead.
-export async function geckoCloses({ network, pool, timeframe = "hour", limit = 300 }) {
-  const url = `https://api.geckoterminal.com/api/v2/networks/${network}/pools/${pool}/ohlcv/${timeframe}?limit=${limit}`;
-  const res = await fetch(url, { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error(`geckoterminal ${res.status}`);
-  const json = await res.json();
-  const list = json?.data?.attributes?.ohlcv_list ?? [];
-  // ohlcv_list rows: [ts, open, high, low, close, volume], newest first.
-  return list
-    .slice()
-    .reverse()
-    .map((row) => Number(row[4]));
+// Live source: free Coinbase Exchange hourly candles (no key, not geoblocked
+// where Binance is). Returns [{ ts, close }] oldest..newest. Paginates backward
+// in 300-candle batches (Coinbase's per-request cap) to get real history.
+//
+// Anyone can reproduce these numbers from the same public endpoint, which is
+// the point: the board is verifiable.
+export async function coinbaseCandles({ product, hours = 720 }) {
+  const GRAN = 3600;
+  const batches = Math.ceil(hours / 300);
+  let end = Math.floor(nowSec());
+  const rows = [];
+  for (let b = 0; b < batches; b++) {
+    const start = end - 300 * GRAN;
+    const url =
+      `https://api.exchange.coinbase.com/products/${product}/candles` +
+      `?granularity=${GRAN}&start=${new Date(start * 1000).toISOString()}&end=${new Date(end * 1000).toISOString()}`;
+    const res = await fetch(url, { headers: { "User-Agent": "agent-arena" } });
+    if (!res.ok) throw new Error(`coinbase ${product} ${res.status}`);
+    const batch = await res.json();
+    // Coinbase rows: [time, low, high, open, close, volume], newest first.
+    for (const r of batch) rows.push({ ts: Number(r[0]) * 1000, close: Number(r[4]) });
+    end = start;
+    await sleep(250); // be polite to the public endpoint
+  }
+  // Dedupe by ts and sort ascending.
+  const seen = new Map();
+  for (const r of rows) seen.set(r.ts, r);
+  return [...seen.values()].sort((a, b) => a.ts - b.ts);
+}
+
+// Wall-clock seconds. Isolated so the rest of the module stays pure/testable.
+function nowSec() {
+  return Date.now() / 1000;
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }

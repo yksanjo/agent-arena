@@ -5,3 +5,4 @@ data/*.db-wal
 data/*.log
 .env
 .DS_Store
+.gstack/

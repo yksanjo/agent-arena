@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Arena — who actually predicts</title>
+<meta name="description" content="A leaderboard of provable predictive edge. Agents make timestamped, auto-resolving forecasts on real tokens. Ranked by calibration, not returns.">
+<meta property="og:title" content="Agent Arena — who actually predicts">
+<meta property="og:description" content="YUI leads with ELO 1098 · skill -0.002 across 636 resolved claims. Ranked by calibration, not returns.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--bg:#06070d;--panel:#0d1020;--line:#1c2238;--cy:#36e6ff;--pu:#b98bff;--gr:#3dffa2;--rd:#ff5a7a;--mut:#7a85a8;--fg:#e7ecff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 700px at 70% -10%,#15183010,transparent),var(--bg);color:var(--fg);font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+.brand{font-size:12px;letter-spacing:.32em;color:var(--cy);text-transform:uppercase}
+h1{font-size:clamp(30px,6vw,52px);margin:.18em 0 .1em;letter-spacing:-.01em;background:linear-gradient(90deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{color:var(--mut);font-size:15px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:12.5px}
+.banner{margin:24px 0;padding:14px 16px;border:1px solid var(--line);border-left:3px solid var(--pu);background:var(--panel);border-radius:8px;font-size:13px;color:#c4ccea}
+.banner b{color:var(--fg)}
+.verdict{margin:26px 0 8px;padding:16px 18px;border-radius:10px;border:1px solid var(--line)}
+.v-noedge{background:linear-gradient(90deg,#1a0f1d,#0d1020);border-color:#3a2440}
+.v-edge{background:linear-gradient(90deg,#0f1d18,#0d1020);border-color:#1f4a38}
+.vlabel{font-size:12px;letter-spacing:.22em;font-weight:700;margin-bottom:6px}
+.v-noedge .vlabel{color:var(--rd)}.v-edge .vlabel{color:var(--gr)}
+.vtext{font-size:14px;color:#dbe2ff}
+.vtext b{color:#fff}
+pre{background:#0a0d1a;border:1px solid var(--line);border-radius:6px;padding:10px}
+h2{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--mut);margin:38px 0 12px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:right;color:var(--mut);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:0 10px 8px;border-bottom:1px solid var(--line)}
+th:nth-child(2),td:nth-child(2){text-align:left}
+td{padding:11px 10px;border-bottom:1px solid #11152a;text-align:right;vertical-align:middle}
+tr:hover td{background:#0b0e1c}
+.rank{color:var(--mut)}
+.name{color:var(--fg);font-weight:600}
+.thesis{display:block;color:var(--mut);font-size:11px;font-weight:400;margin-top:2px;max-width:380px}
+.elo{color:var(--cy);font-weight:700}
+.pos{color:var(--gr)}.neg{color:var(--rd)}.zero{color:var(--mut)}
+.rec{color:var(--mut);font-size:12px}
+.cal{margin:6px 0 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px}
+.card .cn{font-weight:700;font-size:13px}.card .ce{color:var(--cy);font-size:12px}
+.log{font-size:12.5px}
+.log td{padding:8px 10px}
+.tk{color:var(--pu);font-weight:600}
+.up{color:var(--gr)}.dn{color:var(--rd)}
+.foot{margin-top:46px;padding-top:18px;border-top:1px solid var(--line);color:var(--mut);font-size:12px}
+.foot a{color:var(--cy)}
+.pill{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--mut);margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">◇ SOAG · Agent Arena</div>
+  <h1>Who actually predicts.</h1>
+  <p class="tag">Agents make timestamped, auto-resolving forecasts on real tokens. Ranked by <b style="color:var(--fg)">calibration, not returns</b>.</p>
+  <p class="sub">636 resolved 24h claims · BTC · ETH · SOL · BONK · WIF · DOGE · 2026-06-02 22:38 UTC</p>
+
+  <div class="verdict v-noedge">
+    <div class="vlabel">○ NO EDGE DETECTED</div>
+    <div class="vtext">Across 636 real, auto-settled claims, <b>no agent meaningfully beats a coin flip</b> (best skill +0.001; the actual coin-flipper sits mid-pack at rank 4). That's the point: most "alpha" on short-horizon price direction is noise. The leaderboard rankings here are within that noise. Bring an agent that actually clears the line.</div>
+  </div>
+
+  <div class="banner">
+    <b>How to read this.</b> Each agent states a probability that a token will be up 24h later. When the
+    24h is up, a price feed settles it — no human judgment. We score how well-calibrated those probabilities
+    are: a <b>Brier score</b> of <b>0.25 = a coin flip</b>, lower is better, and <b>skill</b> is how far an
+    agent beats that baseline. Positive skill = real edge. Negative = worse than guessing. The leaderboard
+    is sorted by <b>ELO</b> from head-to-head duels: on every claim, the agent with the sharper call beats
+    the others. This is a falsification harness first — if nobody beats the baseline, the board says so.
+  </div>
+
+  <h2>Leaderboard</h2>
+  <table>
+    <thead><tr><th>#</th><th>Agent</th><th>ELO</th><th>Brier</th><th>Skill</th><th>Log-loss</th><th>Duels</th><th>Calibration</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="rank">1</td>
+        <td><span class="name">YUI</span><span class="thesis">right idea (momentum) but pushes probabilities to the extremes</span></td>
+        <td class="elo">1098</td>
+        <td>0.2505</td>
+        <td class="neg">-0.002</td>
+        <td>0.6942</td>
+        <td class="rec">1628–1552</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="50" y="10.2" width="8" height="7.8" fill="#36e6ff" opacity="1.00"/><rect x="61.5" y="10.3" width="8" height="7.7" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+      <tr>
+        <td class="rank">2</td>
+        <td><span class="name">NEXUS</span><span class="thesis">recent strength continues</span></td>
+        <td class="elo">1053</td>
+        <td>0.2502</td>
+        <td class="zero">-0.001</td>
+        <td>0.6936</td>
+        <td class="rec">1636–1544</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="50" y="10.2" width="8" height="7.8" fill="#36e6ff" opacity="1.00"/><rect x="61.5" y="10.3" width="8" height="7.7" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+      <tr>
+        <td class="rank">3</td>
+        <td><span class="name">KIRA</span><span class="thesis">same read as momentum but stays near 0.5 — well-calibrated, low resolution</span></td>
+        <td class="elo">1014</td>
+        <td>0.2501</td>
+        <td class="zero">-0.000</td>
+        <td>0.6933</td>
+        <td class="rec">1626–1554</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="50" y="10.2" width="8" height="7.8" fill="#36e6ff" opacity="1.00"/><rect x="61.5" y="10.3" width="8" height="7.7" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+      <tr>
+        <td class="rank">4</td>
+        <td><span class="name">ZERO</span><span class="thesis">no information — the 0.25-Brier baseline everyone must beat</span></td>
+        <td class="elo">966</td>
+        <td>0.25</td>
+        <td class="zero">+0.000</td>
+        <td>0.6931</td>
+        <td class="rec">1627–1553</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="61.5" y="10.3" width="8" height="7.7" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+      <tr>
+        <td class="rank">5</td>
+        <td><span class="name">ATLAS</span><span class="thesis">slow trend via short vs long average</span></td>
+        <td class="elo">943</td>
+        <td>0.2514</td>
+        <td class="neg">-0.005</td>
+        <td>0.6959</td>
+        <td class="rec">1400–1780</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="50" y="9.3" width="8" height="8.7" fill="#36e6ff" opacity="1.00"/><rect x="61.5" y="11.1" width="8" height="6.9" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+      <tr>
+        <td class="rank">6</td>
+        <td><span class="name">ECHO</span><span class="thesis">recent moves snap back</span></td>
+        <td class="elo">925</td>
+        <td>0.2498</td>
+        <td class="zero">+0.001</td>
+        <td>0.6928</td>
+        <td class="rec">1623–1557</td>
+        <td><svg width="120" height="20" viewBox="0 0 120 20"><rect x="50" y="10.3" width="8" height="7.7" fill="#36e6ff" opacity="1.00"/><rect x="61.5" y="10.2" width="8" height="7.8" fill="#36e6ff" opacity="1.00"/></svg></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Calibration — does 70% mean 70%?</h2>
+  <p class="sub" style="margin:-4px 0 14px">Each curve plots stated probability (x) against what actually happened (y). On the diagonal = honest. Above = under-confident, below = over-confident.</p>
+  <div class="grid">
+    <div class="card">
+      <div class="cn">YUI <span class="ce">1098</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <polyline points="57.3,64.6 68.7,65.0" fill="none" stroke="#b98bff" stroke-width="1.4" opacity="0.7"/><circle cx="57.3" cy="64.6" r="5.0" fill="#36e6ff" opacity="0.85"/><circle cx="68.7" cy="65.0" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="neg">-0.002</span> · ece 0.0154</div>
+    </div>
+    <div class="card">
+      <div class="cn">NEXUS <span class="ce">1053</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <polyline points="57.3,64.6 68.7,65.0" fill="none" stroke="#b98bff" stroke-width="1.4" opacity="0.7"/><circle cx="57.3" cy="64.6" r="5.0" fill="#36e6ff" opacity="0.85"/><circle cx="68.7" cy="65.0" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="zero">-0.001</span> · ece 0.0156</div>
+    </div>
+    <div class="card">
+      <div class="cn">KIRA <span class="ce">1014</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <polyline points="57.3,64.6 68.7,65.0" fill="none" stroke="#b98bff" stroke-width="1.4" opacity="0.7"/><circle cx="57.3" cy="64.6" r="5.0" fill="#36e6ff" opacity="0.85"/><circle cx="68.7" cy="65.0" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="zero">-0.000</span> · ece 0.0157</div>
+    </div>
+    <div class="card">
+      <div class="cn">ZERO <span class="ce">966</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <circle cx="68.7" cy="64.8" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="zero">+0.000</span> · ece 0.0157</div>
+    </div>
+    <div class="card">
+      <div class="cn">ATLAS <span class="ce">943</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <polyline points="57.3,58.2 68.7,70.5" fill="none" stroke="#b98bff" stroke-width="1.4" opacity="0.7"/><circle cx="57.3" cy="58.2" r="5.0" fill="#36e6ff" opacity="0.85"/><circle cx="68.7" cy="70.5" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="neg">-0.005</span> · ece 0.061</div>
+    </div>
+    <div class="card">
+      <div class="cn">ECHO <span class="ce">925</span></div>
+      <div class="cal"><svg width="126" height="126" viewBox="0 0 126 126">
+      <rect x="6" y="6" width="114" height="114" fill="#0a0d1a" stroke="#1c2238"/>
+      <line x1="6" y1="120" x2="120" y2="6" stroke="#2a3252" stroke-dasharray="3 3"/>
+      <polyline points="57.3,65.0 68.7,64.6" fill="none" stroke="#b98bff" stroke-width="1.4" opacity="0.7"/><circle cx="57.3" cy="65.0" r="5.0" fill="#36e6ff" opacity="0.85"/><circle cx="68.7" cy="64.6" r="5.0" fill="#36e6ff" opacity="0.85"/>
+    </svg></div>
+      <div class="sub">skill <span class="zero">+0.001</span> · ece 0.0158</div>
+    </div>
+  </div>
+
+  <h2>Recent resolved claims — verify any of them</h2>
+  <table class="log">
+    <thead><tr><th>Token</th><th>Opened</th><th>24h move</th><th>Outcome</th><th>YUI</th><th>NEXUS</th><th>KIRA</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="tk">WIF</td>
+        <td class="rec">06-01 22:00</td>
+        <td class="dn">-7.33%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BTC</td>
+        <td class="rec">06-01 16:00</td>
+        <td class="dn">-5.81%</td>
+        <td><span class="dn">▼ down</span></td><td class="pos">0.49</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">ETH</td>
+        <td class="rec">06-01 16:00</td>
+        <td class="dn">-2.88%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">SOL</td>
+        <td class="rec">06-01 16:00</td>
+        <td class="dn">-4.58%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BONK</td>
+        <td class="rec">06-01 16:00</td>
+        <td class="dn">-6.01%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">DOGE</td>
+        <td class="rec">06-01 16:00</td>
+        <td class="dn">-4.31%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">WIF</td>
+        <td class="rec">06-01 14:00</td>
+        <td class="dn">-1.09%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BTC</td>
+        <td class="rec">06-01 08:00</td>
+        <td class="dn">-4.24%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">ETH</td>
+        <td class="rec">06-01 08:00</td>
+        <td class="dn">-0.27%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">SOL</td>
+        <td class="rec">06-01 08:00</td>
+        <td class="dn">-1.74%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BONK</td>
+        <td class="rec">06-01 08:00</td>
+        <td class="up">+0.18%</td>
+        <td><span class="up">▲ up</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">DOGE</td>
+        <td class="rec">06-01 08:00</td>
+        <td class="dn">-0.62%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">WIF</td>
+        <td class="rec">06-01 06:00</td>
+        <td class="dn">-0.53%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BTC</td>
+        <td class="rec">06-01 00:00</td>
+        <td class="dn">-3.51%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">ETH</td>
+        <td class="rec">06-01 00:00</td>
+        <td class="dn">-0.94%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">SOL</td>
+        <td class="rec">06-01 00:00</td>
+        <td class="dn">-2.32%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BONK</td>
+        <td class="rec">06-01 00:00</td>
+        <td class="dn">-0.9%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">DOGE</td>
+        <td class="rec">06-01 00:00</td>
+        <td class="dn">-0.05%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">WIF</td>
+        <td class="rec">05-31 22:00</td>
+        <td class="dn">-0.52%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BTC</td>
+        <td class="rec">05-31 16:00</td>
+        <td class="dn">-2.7%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">ETH</td>
+        <td class="rec">05-31 16:00</td>
+        <td class="dn">-1.25%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">SOL</td>
+        <td class="rec">05-31 16:00</td>
+        <td class="dn">-1.46%</td>
+        <td><span class="dn">▼ down</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">BONK</td>
+        <td class="rec">05-31 16:00</td>
+        <td class="up">+2.23%</td>
+        <td><span class="up">▲ up</span></td><td class="neg">0.49</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+      <tr>
+        <td class="tk">DOGE</td>
+        <td class="rec">05-31 16:00</td>
+        <td class="up">+0.23%</td>
+        <td><span class="up">▲ up</span></td><td class="zero">0.50</td><td class="zero">0.50</td><td class="zero">0.50</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Bring your own agent</h2>
+  <div class="banner" style="border-left-color:var(--cy)">
+    An agent is just a function: it sees recent price history and returns one number, its probability that the
+    token goes up. That's it. <b>Beat ZERO</b> (the coin-flipper at skill 0.000) across a few hundred real
+    claims and you've shown something almost nobody has: provable, timestamped, un-cherry-picked edge.
+    <pre style="margin:10px 0 0;color:#9fb0e6;font-size:12px;overflow:auto">{ id: "my-agent", name: "MINE",
+  predict: (ctx) =&gt; /* ctx.returns = recent % moves */  0.5 }</pre>
+  </div>
+
+  <div class="foot">
+    <p><span class="pill">paper</span><span class="pill">no money</span><span class="pill">no betting yet</span>
+    This is a benchmark, not a casino. Forecasts are scored, not staked. The agents shown are baseline
+    forecasting strategies (momentum, mean-reversion, trend, plus calibration archetypes) run on real price
+    history — the harness for plugging in the live SOAG grid agents next.</p>
+    <p>Prices: Coinbase hourly candles (public, no key). Every claim above settles from the same data you can pull
+    yourself. Built with Claude Code. <a href="https://agentsoag.com">agentsoag.com</a></p>
+  </div>
+</div>
+</body>
+</html>

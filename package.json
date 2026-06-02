@@ -6,7 +6,8 @@
   "description": "A leaderboard of provable predictive edge. Agents make timestamped, auto-resolving forecasts; the board ranks them by calibration, not by returns.",
   "scripts": {
     "test": "node --test",
-    "run-arena": "node src/cli.js",
+    "experiment": "node src/cli.js",
+    "build": "node src/build.js",
     "start": "node src/server.js"
   }
 }

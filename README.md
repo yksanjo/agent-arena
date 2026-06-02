@@ -33,25 +33,57 @@ human judgment ("will SOL be up 24h from now" → a price feed decides). No free
 text, no "will the Fed cut rates". That single rule sidesteps the dispute/oracle
 problem that kills most prediction markets.
 
-## Run the experiment (no network, no money)
+## Build the shareable page (real data)
 
 ```bash
-node src/cli.js
+npm run build          # pulls ~30d of hourly prices from Coinbase, writes dist/index.html
+npm start              # serve it at http://localhost:4095
 ```
 
-Runs all six forecasters over two synthetic worlds and prints the board:
+`build` backfills the board from real price history for a basket of tokens
+(BTC, ETH, SOL, BONK, WIF, DOGE by default) so the page is full and verifiable
+the moment you share it, instead of an empty page waiting 24h for its first
+claim to settle. The output is one self-contained `dist/index.html` (~20KB, no
+deps, no CDN) you can drop on any static host.
 
-- **NO EDGE** (pure random walk): every agent collapses to ~0.25 Brier. Flat
-  board. This is the honest -EV world.
-- **EDGE EXISTS** (a slow trend regime): the momentum/trend agents earn positive
-  skill, mean-reversion goes negative, the coin-flipper sits at exactly 0.
+Custom basket: `npm run build -- SOL,BONK,WIF`.
 
-That contrast is the whole point: the harness detects skill when it's there and
-refuses to invent it when it isn't.
+### What the real data says (and why that's the point)
+
+As of the first run, on real BTC/ETH/SOL/BONK/WIF/DOGE over ~30 days, **no agent
+beats the coin flip** at any horizon from 2h to 24h. Best skill ≈ +0.002, which
+is noise. The page says so, in a big "NO EDGE DETECTED" verdict. That is the
+honest result, and it is the product: most short-horizon "alpha" is noise, and
+this arena makes anyone prove otherwise with timestamped, auto-settled calls.
+When an agent ever does clear the line, the verdict flips to "EDGE DETECTED" on
+its own.
+
+## Run the offline experiment (no network, no money)
 
 ```bash
-node --test    # 27 assertions, no mocks
+npm run experiment     # synthetic two-world demo
+node --test            # 38 assertions, no mocks
 ```
+
+The experiment runs all six forecasters over two synthetic worlds:
+
+- **NO EDGE** (pure random walk): every agent collapses to ~0.25 Brier. Flat board.
+- **EDGE EXISTS** (a slow trend regime): momentum/trend earn positive skill,
+  mean-reversion goes negative, the coin-flipper sits at exactly 0.
+
+That contrast proves the harness detects skill when it's there and refuses to
+invent it when it isn't.
+
+## Deploy
+
+`dist/index.html` is fully static. Any of these work:
+
+- **Cloudflare Pages / Worker** (like degenscreener): point it at `dist/`.
+- **Pi + Caddy**: `file_server` the `dist/` dir, or `npm start` behind a proxy.
+- **Vercel**: `vercel deploy dist`.
+
+Re-run `npm run build` to refresh (e.g. nightly cron) — the board updates and
+the verdict recomputes from fresh data.
 
 ## Layout
 
@@ -62,16 +94,21 @@ node --test    # 27 assertions, no mocks
 | `src/claims.js` | Auto-resolvable claim types (`token_up_24h`, `outperform_24h`). |
 | `src/forecasters.js` | Six differentiated forecaster archetypes (momentum, mean-rev, trend, overconfident, humble, coin-flip). |
 | `src/feed.js` | Seeded synthetic price paths (offline) + free GeckoTerminal OHLCV (live). |
-| `src/arena.js` | Wires history → claims → forecasts → resolution → scoring + duels. |
-| `src/cli.js` | The kill-or-continue experiment. |
+| `src/arena.js` | Single-series backtest used by the offline experiment. |
+| `src/board.js` | Multi-token board: pooled calibration + one shared ELO ladder + claims log. |
+| `src/render.js` | Self-contained SOAG-styled HTML page (verdict, leaderboard, calibration curves, claims log). |
+| `src/build.js` | Fetch real data → build board → write `dist/index.html` + `data/board.json`. |
+| `src/server.js` | Tiny static server for preview/hosting. |
+| `src/cli.js` | The offline kill-or-continue experiment. |
 
 ## Status
 
-**v0.1 — Approach A (paper benchmark).** Scoring + duel core built and tested.
-Forecasters here are hand-designed archetypes used to prove the board has
-signal. Next step is swapping them for the live [SOAG grid](../soag-grid) agents
-and pointing the resolver at a real free price feed. The scoring core does not
-change when that happens.
+**v0.1 — shareable MVP (Approach A, paper benchmark).** Scoring + duel core,
+multi-token board on real Coinbase data, and a self-contained public page, all
+built and tested (38 no-mock assertions). Forecasters are hand-designed
+archetypes that prove the board has signal; the next step is swapping them for
+the live [SOAG grid](../soag-grid) agents. The scoring core does not change when
+that happens.
 
 Not built yet (deliberately): on-chain signed predictions, $SOAG staked duels,
 x402 entry/query fees, the public web page. Those are Approach B, and they only
