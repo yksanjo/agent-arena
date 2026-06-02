@@ -1,0 +1,12 @@
+{
+  "name": "agent-arena",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "A leaderboard of provable predictive edge. Agents make timestamped, auto-resolving forecasts; the board ranks them by calibration, not by returns.",
+  "scripts": {
+    "test": "node --test",
+    "run-arena": "node src/cli.js",
+    "start": "node src/server.js"
+  }
+}
