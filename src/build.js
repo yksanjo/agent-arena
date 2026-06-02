@@ -50,6 +50,7 @@ mkdirSync(join(ROOT, "dist"), { recursive: true });
 mkdirSync(join(ROOT, "data"), { recursive: true });
 writeFileSync(join(ROOT, "data", "board.json"), JSON.stringify({ generatedAt, ...board }, null, 2));
 writeFileSync(join(ROOT, "dist", "index.html"), renderPage(board, { generatedAt }));
+writeFileSync(join(ROOT, "dist", "CNAME"), "arena.agentsoag.com\n"); // keep custom domain across rebuilds
 
 console.log(`\nBoard: ${board.totalClaims} claims · Brier spread ${board.brierSpread}`);
 board.leaderboard.forEach((r, i) =>
