@@ -20,7 +20,13 @@ html,body{height:100%;overflow:hidden;background:#04050b;color:var(--fg);font:14
 .claim{position:fixed;top:64px;left:50%;transform:translateX(-50%);text-align:center;z-index:5}
 .claim .q{font-size:15px;color:var(--fg)}
 .claim .s{font-size:11px;color:var(--mut);margin-top:2px}
-.pot{position:fixed;top:108px;left:50%;transform:translateX(-50%);text-align:center;z-index:5}
+.phasewrap{position:fixed;top:104px;left:50%;transform:translateX(-50%);text-align:center;z-index:5;width:min(360px,82vw)}
+.phasetxt{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gr);margin-bottom:5px}
+.phasetxt.live{color:var(--rd)}.phasetxt.settle{color:var(--pu)}
+.timer{height:5px;border-radius:3px;background:#0e1426;overflow:hidden}
+.timerfill{height:100%;width:100%;background:linear-gradient(90deg,var(--gr),var(--cy));transition:width .12s linear}
+.live{font-size:30px;font-weight:800;margin-top:8px;height:34px;letter-spacing:.02em}
+.pot{position:fixed;top:188px;left:50%;transform:translateX(-50%);text-align:center;z-index:5}
 .pot .n{font-size:18px;font-weight:700;color:var(--pu)}
 .pot .l{font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
 .barwrap{position:fixed;left:50%;bottom:255px;transform:translateX(-50%);width:min(420px,86vw);z-index:5}
@@ -67,7 +73,8 @@ a{color:var(--cy)}
   <div class="bal"><div class="n" id="bal">50,000</div><div class="l">◇ your $SOAG</div></div>
 </div>
 
-<div class="claim"><div class="q" id="claimq">SOL ▲ up in 24h?</div><div class="s" id="claims">KIRA calls 61% UP · NEXUS calls 39%</div></div>
+<div class="claim"><div class="q" id="claimq">SOL ▲ up in 60s?</div><div class="s" id="claims">KIRA calls 61% UP · NEXUS calls 39%</div></div>
+<div class="phasewrap"><div class="phasetxt" id="phasetxt">BETTING OPEN</div><div class="timer"><div class="timerfill" id="timerfill"></div></div><div class="live" id="live"></div></div>
 <div class="pot"><div class="n" id="pot">◇ 5,000</div><div class="l">pot on the line</div></div>
 
 <div class="barwrap">
@@ -79,11 +86,7 @@ a{color:var(--cy)}
 
 <div class="dock">
   <button class="smash" id="smash">Pump<span class="pp">+1000 ◇</span></button>
-  <div class="row">
-    <button class="btn fight" id="fight">⚔ Fight</button>
-    <button class="btn" id="reset">↻ New round</button>
-  </div>
-  <div class="note">Each pump stakes <b>1000 ◇</b> on KIRA. More staked = bigger slice of the pot if she's right. Pumping <b>never</b> changes her odds — she still has to call it correctly. That's the whole game.</div>
+  <div class="note">Each pump stakes <b>1000 ◇</b> on KIRA for this round. More staked = bigger slice of the pot if she calls it right. Pumping <b>never</b> changes her odds. Rounds run every ~20s and settle live — back her before the timer's up.</div>
 </div>
 <div class="demo">DEMO · mock balance &amp; outcome</div>
 
@@ -104,8 +107,10 @@ a{color:var(--cy)}
 import * as THREE from "three";
 
 // ---------- state ----------
-const S = { balance: 0, stake: 0, oppStake: 5000, fighting: false, over: false, committed: false };
+const S = { balance: 0, stake: 0, oppStake: 5000, committed: false, phase: "bet", pt: 0 };
 const COMMIT = 100000;
+const BET = 10, LIVE = 4, IMPACT = 0.45, SETTLE = 3; // round phase durations (s)
+let liveTarget = 0;
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
 const $ = (id) => document.getElementById(id);
 
@@ -235,16 +240,13 @@ function addShake(v) { shake = Math.min(0.6, shake + v); }
 
 // ---------- interactions ----------
 $("smash").addEventListener("click", () => {
-  if (S.fighting || S.over) return;
+  if (!S.committed || S.phase !== "bet") return;
   if (S.balance < 1000) { toast("STACK EMPTY", "You've pumped your whole committed stack. Commit more ◇ to keep fighting (demo: refresh).", "lose"); return; }
   S.balance -= 1000; S.stake += 1000;
   burst(you.position.clone().setY(1.5), 0x36e6ff, 26, 1);
   you.userData.pulse = 1; addShake(0.12); blip(420 + Math.min(600, S.stake / 30), 0.07);
   floatText("+1000 ◇"); syncHUD();
 });
-
-$("fight").addEventListener("click", startFight);
-$("reset").addEventListener("click", newRound);
 
 // commit gate: stake 100k once, roll the balance up fast, then the button is free
 $("commit").addEventListener("click", () => {
@@ -258,20 +260,21 @@ $("commit").addEventListener("click", () => {
     S.balance = Math.round(COMMIT * (k * k * (3 - 2 * k)));
     $("bal").textContent = fmt(S.balance);
     if (k < 1) { if (Math.random() < 0.4) blip(500 + k * 700, 0.03, "square", 0.03); requestAnimationFrame(roll); }
-    else { S.balance = COMMIT; syncHUD(); blip(880, 0.18, "triangle", 0.05); }
+    else { S.balance = COMMIT; syncHUD(); blip(880, 0.18, "triangle", 0.05); $("smash").disabled = false; }
   })(t0);
 });
 
-function startFight() {
-  if (S.fighting || S.over) return;
-  if (S.stake <= 0) { toast("STAKE FIRST", "Pump some ◇ onto KIRA, then fight.", "lose"); return; }
-  S.fighting = true; $("fight").disabled = true; $("smash").disabled = true;
+// when the betting window closes, lock bets and go live
+function lockBets() {
+  S.phase = "live"; S.pt = 0;
+  resolveOutcome();
+  liveTarget = (clash.winner === "you" ? 1 : -1) * (0.5 + Math.random() * 2.6);
+  $("smash").disabled = true;
+  $("phasetxt").textContent = "LIVE — 60s candle"; $("phasetxt").className = "live";
   blip(160, 0.18, "sawtooth", 0.06);
-  clash.t = 0; clash.phase = "charge";
 }
 
-// clash state machine driven in the animation loop
-const clash = { phase: "idle", t: 0, winner: null };
+const clash = { winner: null };
 function resolveOutcome() {
   // HONEST mock: outcome is ~50/50 and does NOT depend on stake. Pumping only
   // changed payout size, never odds. KIRA's stated 61% is flavor here.
@@ -280,32 +283,36 @@ function resolveOutcome() {
 }
 
 function settle() {
-  S.over = true; S.fighting = false;
   const won = clash.winner === "you";
-  const pot = S.stake + S.oppStake;
-  const move = (won ? "+" : "-") + (1 + Math.random() * 4).toFixed(1) + "%";
-  if (won) {
-    S.balance += pot; // get your stake back + opponent's pot
-    toast("KIRA WAS RIGHT", `SOL ${move} in 24h. You win the pot: +◇ ${fmt(S.oppStake)}.`, "win");
+  const move = ($("live").textContent || "").trim();
+  if (S.stake <= 0) {
+    toast(won ? "KIRA WAS RIGHT" : "NEXUS CALLED IT", `You sat this one out. ${won ? "KIRA" : "NEXUS"} took it, ${move}.`, won ? "win" : "lose");
+  } else if (won) {
+    S.balance += S.stake + S.oppStake; // stake back + the opposing pot
+    toast("KIRA WAS RIGHT", `SOL ${move}. You take the pot: +◇ ${fmt(S.oppStake)}.`, "win");
     burst(you.position.clone().setY(1.5), 0x3dffa2, 90, 1.6);
     blip(660, 0.2, "triangle", 0.06); setTimeout(() => blip(880, 0.25, "triangle", 0.05), 120);
   } else {
-    toast("NEXUS CALLED IT", `SOL ${move} in 24h. KIRA missed — you lose ◇ ${fmt(S.stake)}.`, "lose");
+    toast("NEXUS CALLED IT", `SOL ${move}. KIRA missed — you lose ◇ ${fmt(S.stake)}.`, "lose");
     burst(foe.position.clone().setY(1.5), 0xb98bff, 90, 1.6);
     blip(180, 0.3, "sawtooth", 0.06);
   }
-  $("reset").disabled = false; syncHUD();
+  $("phasetxt").textContent = won ? "KIRA WINS" : "NEXUS WINS"; $("phasetxt").className = "settle";
+  syncHUD();
 }
 
 function newRound() {
-  S.stake = 0; S.over = false; S.fighting = false;
+  S.stake = 0; S.phase = "bet"; S.pt = 0;
   S.oppStake = 4000 + Math.floor(Math.random() * 5000);
-  clash.phase = "idle"; clash.winner = null;
+  clash.winner = null; liveTarget = 0;
   you.position.x = you.userData.baseX; foe.position.x = foe.userData.baseX;
   you.userData.core.scale.setScalar(1); foe.userData.core.scale.setScalar(1);
   you.userData.core.material.emissiveIntensity = 0.7; foe.userData.core.material.emissiveIntensity = 0.7;
-  $("fight").disabled = false; $("smash").disabled = false; hideToast();
-  const claims = [["SOL ▲ up in 24h?", "61% UP", "39%"], ["BONK ▲ up in 24h?", "57% UP", "43%"], ["ETH ▲ up in 24h?", "54% UP", "46%"]];
+  hideToast();
+  $("smash").disabled = !S.committed;
+  $("phasetxt").textContent = "BETTING OPEN — back KIRA"; $("phasetxt").className = "";
+  $("live").textContent = ""; $("timerfill").style.width = "100%";
+  const claims = [["SOL ▲ up in 60s?", "61% UP", "39%"], ["BONK ▲ up in 60s?", "57% UP", "43%"], ["ETH ▲ up in 60s?", "54% UP", "46%"]];
   const c = claims[Math.floor(Math.random() * claims.length)];
   $("claimq").textContent = c[0]; $("claims").textContent = `KIRA calls ${c[1]} · NEXUS calls ${c[2]}`;
   syncHUD();
@@ -334,24 +341,36 @@ function loop(t) {
   you.userData.core.scale.lerp(new THREE.Vector3(swell, swell, swell), 0.1);
   if (you.userData.pulse > 0) { you.userData.pulse -= dt * 3; you.userData.core.material.emissiveIntensity = 0.7 + you.userData.pulse; }
 
-  // clash choreography
-  if (clash.phase === "charge") {
-    clash.t += dt;
-    you.position.x = THREE.MathUtils.lerp(you.userData.baseX, -0.7, ease(clash.t / 0.5));
-    foe.position.x = THREE.MathUtils.lerp(foe.userData.baseX, 0.7, ease(clash.t / 0.5));
-    if (clash.t >= 0.5) { clash.phase = "impact"; clash.t = 0; resolveOutcome();
-      flash.material.opacity = 0.9; addShake(0.55);
-      burst(new THREE.Vector3(0, 1.5, 0), 0xffffff, 120, 2); blip(90, 0.25, "square", 0.07); }
-  } else if (clash.phase === "impact") {
-    clash.t += dt; flash.material.opacity = Math.max(0, 0.9 - clash.t * 3);
-    if (clash.t >= 0.45) {
-      clash.phase = "done";
-      const w = clash.winner === "you" ? you : foe, l = clash.winner === "you" ? foe : you;
-      w.userData.core.material.emissiveIntensity = 1.4;
-      l.userData.core.material.emissiveIntensity = 0.15;
-      l.userData.core.scale.setScalar(0.7);
-      w.position.x = clash.winner === "you" ? -2 : 2; l.position.x = clash.winner === "you" ? 4.2 : -4.2;
-      settle();
+  // ----- round state machine: bet -> live -> impact -> settle -> next -----
+  if (S.committed) {
+    S.pt += dt;
+    if (S.phase === "bet") {
+      $("timerfill").style.width = Math.max(0, (1 - S.pt / BET) * 100).toFixed(1) + "%";
+      if (S.pt >= BET) lockBets();
+    } else if (S.phase === "live") {
+      const p = Math.min(1, S.pt / LIVE);
+      you.position.x = THREE.MathUtils.lerp(you.userData.baseX, -0.7, ease(p));
+      foe.position.x = THREE.MathUtils.lerp(foe.userData.baseX, 0.7, ease(p));
+      const pct = liveTarget * ease(p) + (Math.random() - 0.5) * 1.4 * (1 - p);
+      const up = pct >= 0;
+      $("live").textContent = (up ? "▲ +" : "▼ ") + Math.abs(pct).toFixed(2) + "%";
+      $("live").style.color = up ? "var(--gr)" : "var(--rd)";
+      if (S.pt >= LIVE) {
+        S.phase = "impact"; S.pt = 0; flash.material.opacity = 0.9; addShake(0.55);
+        burst(new THREE.Vector3(0, 1.5, 0), 0xffffff, 120, 2); blip(90, 0.25, "square", 0.07);
+      }
+    } else if (S.phase === "impact") {
+      flash.material.opacity = Math.max(0, 0.9 - S.pt * 3);
+      if (S.pt >= IMPACT) {
+        const w = clash.winner === "you" ? you : foe, l = clash.winner === "you" ? foe : you;
+        w.userData.core.material.emissiveIntensity = 1.4;
+        l.userData.core.material.emissiveIntensity = 0.15;
+        l.userData.core.scale.setScalar(0.7);
+        w.position.x = clash.winner === "you" ? -2 : 2; l.position.x = clash.winner === "you" ? 4.2 : -4.2;
+        settle(); S.phase = "settle"; S.pt = 0;
+      }
+    } else if (S.phase === "settle") {
+      if (S.pt >= SETTLE) newRound();
     }
   }
 
