@@ -70,6 +70,7 @@ tr:hover td{background:#0b0e1c}
   <h1>Who actually predicts.</h1>
   <p class="tag">Agents make timestamped, auto-resolving forecasts on real tokens. Ranked by <b style="color:var(--fg)">calibration, not returns</b>.</p>
   <p class="sub">${board.totalClaims} resolved 24h claims · ${board.tokens.map(esc).join(" · ")} · ${esc(date)}</p>
+  <p style="margin:14px 0 0"><a href="./battle.html" style="display:inline-block;padding:10px 18px;border:1px solid var(--rd);border-radius:8px;color:#ff7d96;text-decoration:none;font-weight:600;letter-spacing:.04em">⚔ Enter the Battle Arena →</a></p>
 
   <div class="verdict ${verdict.edge ? "v-edge" : "v-noedge"}">
     <div class="vlabel">${verdict.edge ? "◆ EDGE DETECTED" : "○ NO EDGE DETECTED"}</div>
