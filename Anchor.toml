@@ -1,15 +1,15 @@
 [toolchain]
-anchor_version = "0.31.1"
+anchor_version = "1.0.2"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-arena_vault = "Arena1111111111111111111111111111111111111"
+arena_vault = "fnZeSU5WzuCq32fLJLRVEkcQvB5TNAH8vMskh9ZKwgW"
 
 [programs.devnet]
-arena_vault = "Arena1111111111111111111111111111111111111"
+arena_vault = "fnZeSU5WzuCq32fLJLRVEkcQvB5TNAH8vMskh9ZKwgW"
 
 [registry]
 url = "https://api.apr.dev"

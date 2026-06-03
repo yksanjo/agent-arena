@@ -12,3 +12,5 @@ target/
 .anchor/
 test-ledger/
 programs/**/target/
+
+Cargo.lock

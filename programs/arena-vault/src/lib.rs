@@ -35,7 +35,7 @@ use anchor_spl::token_interface::{
     self, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
 
-declare_id!("Arena1111111111111111111111111111111111111"); // placeholder — replace on first deploy
+declare_id!("fnZeSU5WzuCq32fLJLRVEkcQvB5TNAH8vMskh9ZKwgW");
 
 #[program]
 pub mod arena_vault {

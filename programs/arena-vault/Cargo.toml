@@ -17,3 +17,4 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = "0.31.1"
 anchor-spl = "0.31.1"
+# NOTE: pinned to match the installed Anchor CLI; adjust if `anchor build` flags a version mismatch.
