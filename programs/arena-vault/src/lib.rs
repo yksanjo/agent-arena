@@ -23,8 +23,12 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
+use pyth_solana_receiver_sdk::price_update::{get_feed_id_from_hex, PriceUpdateV2};
 
 declare_id!("fnZeSU5WzuCq32fLJLRVEkcQvB5TNAH8vMskh9ZKwgW");
+
+// Pyth Crypto.SOL/USD feed id. The close price is read from this on-chain feed.
+const SOL_USD_FEED_HEX: &str = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
 
 #[program]
 pub mod arena_vault {
@@ -73,9 +77,18 @@ pub mod arena_vault {
     /// TODO(devnet hardening, THREATS.md #1): replace the passed-in open/close
     /// prices with reads from on-chain Pyth PriceUpdateV2 accounts, so the price
     /// VALUES are un-fakeable too. The dead-band/outcome rule below is unchanged.
-    pub fn settle_round(ctx: Context<SettleRound>, open_price: i64, close_price: i64, deadband_bps: u32, bet_up: bool, stake: u64, reserved: u64) -> Result<()> {
+    pub fn settle_round(ctx: Context<SettleRound>, open_price: i64, deadband_bps: u32, bet_up: bool, stake: u64, reserved: u64, max_age_secs: u64) -> Result<()> {
         require!(!ctx.accounts.vault.paused, VaultError::Paused);
-        require!(open_price > 0 && close_price > 0, VaultError::BadPrice);
+        require!(open_price > 0, VaultError::BadPrice);
+
+        // CLOSE price comes from the on-chain Pyth SOL/USD feed — the authority
+        // cannot fake it. open_price is the round's snapshot (same feed/exponent).
+        let feed_id = get_feed_id_from_hex(SOL_USD_FEED_HEX).map_err(|_| error!(VaultError::BadPrice))?;
+        let p = ctx.accounts.price_update
+            .get_price_no_older_than(&Clock::get()?, max_age_secs, &feed_id)
+            .map_err(|_| error!(VaultError::StaleOracle))?;
+        let close_price = p.price;
+        require!(close_price > 0, VaultError::BadPrice);
 
         // dead-band: signed basis-point move = (close-open)/open * 10000
         let move_bps = ((close_price as i128) - (open_price as i128))
@@ -207,6 +220,8 @@ pub struct SettleRound<'info> {
     pub deposits_vault: InterfaceAccount<'info, TokenAccount>,
     #[account(mut, address = vault.house_vault)]
     pub house_vault: InterfaceAccount<'info, TokenAccount>,
+    /// The Pyth SOL/USD price update account (close price source).
+    pub price_update: Account<'info, PriceUpdateV2>,
     pub token_program: Interface<'info, TokenInterface>,
 }
 impl<'info> SettleRound<'info> {
@@ -281,4 +296,5 @@ pub enum VaultError {
     #[msg("mint has a freeze authority")] MintHasFreezeAuthority,
     #[msg("caller is not the settlement authority")] Unauthorized,
     #[msg("price must be > 0")] BadPrice,
+    #[msg("oracle price is stale or unavailable")] StaleOracle,
 }
