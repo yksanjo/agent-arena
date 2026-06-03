@@ -6,3 +6,9 @@ data/*.log
 .env
 .DS_Store
 .gstack/
+
+# anchor / rust build
+target/
+.anchor/
+test-ledger/
+programs/**/target/

@@ -1,0 +1,19 @@
+[package]
+name = "arena-vault"
+version = "0.0.0"
+description = "Agent Battle Arena non-custodial vault (DRAFT — not audited)"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "arena_vault"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+anchor-spl = "0.31.1"
