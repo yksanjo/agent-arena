@@ -287,7 +287,7 @@ $("pump").addEventListener("click", () => {
 // ---- real wallet connect + real $SOAG balance (read-only, no funds move yet) ----
 const SOAG_MINT = "ADue87cPcDhsyGq2hrDsukp7j8AFTSnaYHSanDATpump";
 const SOAG_DECIMALS = 6;
-const RPC = "https://api.mainnet-beta.solana.com";
+const RPC = "https://solana-rpc.publicnode.com"; // CORS-open, browser-friendly (mainnet-beta blocks browsers)
 let WALLET = null, SOAG_BAL = null;
 
 // ---- REAL-MONEY entry (charge $SOAG to enter) ----
@@ -310,18 +310,15 @@ async function chargeEntry() {
   const TP = spl.TOKEN_2022_PROGRAM_ID;
   const fromAta = spl.getAssociatedTokenAddressSync(mint, player, false, TP);
   const toAta = spl.getAssociatedTokenAddressSync(mint, dest, false, TP);
-  const ixs = [];
-  if (!(await conn.getAccountInfo(toAta))) {
-    ixs.push(spl.createAssociatedTokenAccountInstruction(player, toAta, dest, mint, TP)); // player pays the ATA rent once
-  }
   const amount = BigInt(ENTRY_SOAG) * (10n ** BigInt(SOAG_DECIMALS));
-  ixs.push(spl.createTransferCheckedInstruction(fromAta, mint, toAta, player, amount, SOAG_DECIMALS, [], TP));
-  const tx = new web3.Transaction().add(...ixs);
+  const tx = new web3.Transaction()
+    // idempotent: creates the dest ATA only if missing, no extra RPC lookup needed
+    .add(spl.createAssociatedTokenAccountIdempotentInstruction(player, toAta, dest, mint, TP))
+    .add(spl.createTransferCheckedInstruction(fromAta, mint, toAta, player, amount, SOAG_DECIMALS, [], TP));
   tx.feePayer = player;
-  tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+  tx.recentBlockhash = (await conn.getLatestBlockhash("finalized")).blockhash;
   const provider = window.phantom?.solana || window.solana;
   const { signature } = await provider.signAndSendTransaction(tx);
-  await conn.confirmTransaction(signature, "confirmed");
   return signature;
 }
 
