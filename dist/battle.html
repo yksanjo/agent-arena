@@ -134,7 +134,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 
       <div class="vsbadge">
         <div class="x">VS</div>
-        <div class="pot"><div class="n" id="pot">◇ 0</div><div class="l">to win · 1.90×</div></div>
+        <div class="pot"><div class="n" id="pot">◇ 0</div><div class="l">to win · 1.70×</div></div>
       </div>
 
       <div class="fighter foe" id="foeF">
@@ -156,7 +156,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 
     <div class="dock">
       <button class="pump" id="pump" disabled>Pump<span class="pp">+2,500 ◇</span></button>
-      <div class="note">Fast <b>15s</b> round, settled by the live price. Pump to stake on KIRA — a win <b>pays 1.90×</b> (5% house edge), a miss loses the stake. Pumping grows your bet, <b>never</b> her odds. The house caps daily exposure so the book stays solvent.</div>
+      <div class="note">Fast <b>15s</b> round, settled by the live price. Pump to stake on KIRA — a win <b>pays 1.70×</b>, a miss loses the stake, and a move under the <b>0.15% dead-band voids &amp; refunds</b> (so you can't farm tiny front-runnable ticks). Pumping grows your bet, <b>never</b> her odds. House risk is a separate, capped wallet.</div>
     </div>
   </div>
 
@@ -181,7 +181,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 <script>
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
-const COMMIT = 100000, PUMP = 2500, PAYOUT = 1.9; // 1.9x = ~5% house edge on a 50/50
+const COMMIT = 100000, PUMP = 2500, PAYOUT = 1.7; // 1.7x = ~15% house edge (hardened)
+const DEADBAND = 0.15; // moves smaller than this % VOID + refund (kills lead-lag picks)
 const BET = 7, LIVE = 5, IMPACT = 0.4, SETTLE = 2.6; // seconds
 const S = { bal: 0, stake: 0, field: 5000, committed: false, phase: "bet", pt: 0, winner: null, target: 0 };
 
@@ -283,14 +284,23 @@ $("commit").addEventListener("click", () => {
 
 // ---- round logic ----
 function lockBets() {
-  S.phase = "live"; S.pt = 0; S.winner = Math.random() < 0.5 ? "you" : "foe";
-  S.target = (S.winner === "you" ? 1 : -1) * (0.3 + Math.random() * 1.4);
+  S.phase = "live"; S.pt = 0;
+  S.target = (Math.random() < 0.5 ? 1 : -1) * (Math.random() * 1.8); // can land inside the dead-band
+  S.void = Math.abs(S.target) < DEADBAND;
+  S.winner = S.target >= 0 ? "you" : "foe";
   $("pump").disabled = true;
   $("phasetxt").textContent = "LIVE — SOL, 15s"; $("phasetxt").className = "phasetxt live";
   blip(150, 0.18, "sawtooth", 0.06);
 }
 function settle() {
-  const won = S.winner === "you", move = ($("livepct").textContent || "").trim();
+  const move = ($("livepct").textContent || "").trim();
+  if (S.void) {
+    if (S.stake > 0) S.bal += S.stake; // dead-band: refund, no win/loss
+    toast("PUSH · VOID", `SOL ${move} — under the ${DEADBAND}% dead-band. Stake refunded.`, "");
+    $("phasetxt").textContent = "VOID — REFUNDED"; $("phasetxt").className = "phasetxt settle";
+    $("youF").style.filter = "none"; $("foeF").style.filter = "none"; syncHUD(); return;
+  }
+  const won = S.winner === "you";
   if (S.stake <= 0) {
     toast(won ? "KIRA TAKES IT" : "FIELD TAKES IT", `You sat out. SOL ${move}.`, won ? "win" : "lose");
   } else if (won) {

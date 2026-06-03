@@ -2,20 +2,39 @@
 
 Status: DRAFT (design before code — this holds real money)
 
-## Decisions (LOCKED 2026-06-03)
+## Decisions (LOCKED 2026-06-03, hardened after adversarial review — see THREATS.md)
 
-- **Custody:** non-custodial vault — player deposits are program-owned and can
-  only ever return to the depositing wallet.
-- **Payout model:** **house-banked** — players bet against the house, not each
-  other. Winners are paid from a house liquidity pool.
-- **House edge:** **~5%** — a winning 50/50 pays **1.90×** stake, not 2×. This
-  is the house's revenue over volume and the reason the book is profitable
-  rather than break-even.
-- **Daily exposure cap:** **1,000,000 (units TBD: SOAG vs USD)** of *house
-  at-risk*, enforced by pausing NEW rounds once hit — never by capping a won
-  player's withdrawal (stranding a winner is unacceptable).
-- **Anti-gaming:** lock-bet-then-snapshot-price, single Pyth oracle, per-wallet
-  + global caps, min/max bet, rate limits, anomaly flags.
+- **Custody:** non-custodial — BUT only true once we **segregate accounts**
+  (house pool in its own token account, separate from deposit-backing AND from
+  the treasury), enforce an on-chain solvency invariant, and settle on-chain so
+  no single key can mint a winning balance. The current single-vault design is
+  NOT non-custodial; this is a required change before the label is honest.
+- **Payout model:** **house-banked, hardened** — players bet the house; house
+  risk lives in a **separate, pre-funded, capped house wallet** (NOT the
+  treasury). Worst-case loss is bounded to what that wallet holds.
+- **House edge:** **~15%** — a winning 50/50 pays **1.70×**, not 1.90×. Bigger
+  edge because short-horizon price bets leak to faster players.
+- **Dead-band:** rounds VOID + refund unless |move| exceeds a band larger than
+  Pyth confidence + typical 15s drift (demo: 0.15%). Kills the easy lead-lag picks.
+- **Randomized timing:** round length + close-sampling slot randomized and
+  committed-hidden at open; close = TWAP over multiple Pyth updates, not one tick.
+- **Per-round, per-direction cap:** house at-risk per round per side sized so a
+  fully-informed round can't hurt the bankroll — bounds sybil/correlated flow.
+- **Daily exposure cap:** rolling-window (not a daily cliff a fleet can vacuum at
+  the roll), enforced by pausing NEW exposure — never capping a won withdrawal.
+  Reserve exposure on **every pump**, not just bet-open.
+- **Settlement:** on-chain against Pyth; off-chain authority only *sequences*
+  bets. Server-only clock; reject late/after-lock bets; idempotency keys;
+  per-wallet serialized processing. Stale/wide-confidence Pyth → VOID+refund.
+- **Anti-abuse:** per-wallet caps treated as cosmetic (wallets are free);
+  rely on per-direction caps + **sybil-cluster detection** (funding/withdraw/
+  timing/bet-side correlation) + automated realized-P&L kill-switch that can
+  **hold winning-voucher signing** for flagged clusters (deposits always
+  remain reclaimable, so this never violates custody).
+- **Program immutability:** immutable, or upgrade authority in a disclosed
+  timelock multisig — else "non-custodial" is false by construction.
+- **Regulatory:** no-KYC house-banked real-money gambling = existential legal
+  exposure → geofence + legal read before mainnet; withdraw velocity holds.
 
 ## Goal
 
