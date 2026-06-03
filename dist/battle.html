@@ -78,7 +78,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 .pump:active{transform:translateY(10px);box-shadow:0 2px 0 #6e0a1d,0 3px 12px #ff3b5c55,inset 0 4px 12px #ffffff77}
 .pump:disabled{filter:grayscale(.6) brightness(.7);cursor:default}
 .pump .pp{display:block;font-size:10px;opacity:.9;margin-top:4px;letter-spacing:.05em}
+.cashout{cursor:pointer;border:1px solid var(--gr);background:#0c1a14;color:var(--gr);border-radius:9px;padding:8px 16px;font:700 12px ui-monospace,monospace;letter-spacing:.06em}
+.cashout:hover{background:#10241b}
 .note{font-size:10px;color:var(--mut);max-width:560px;text-align:center;line-height:1.5}
+.rcpt{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:#04051099;backdrop-filter:blur(6px)}
+.rcpt.show{display:flex}
+.rcptcard{width:min(420px,90vw);border:1px solid var(--gr);border-radius:14px;background:linear-gradient(180deg,#0a1410,#0a0518);padding:22px;box-shadow:0 0 50px #3dffa233}
+.rtitle{font-size:13px;letter-spacing:.26em;color:var(--gr);text-align:center;margin-bottom:16px}
+.rrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #16231c;font-size:13px}
+.rrow span{color:var(--mut)}.rrow b{color:var(--fg);font-family:ui-monospace,monospace}
+.rnote{font-size:11px;color:var(--mut);margin:14px 0;line-height:1.6}.rnote b{color:#c8d0f0}
+.rbtns{display:flex;gap:8px}
+.rbtn{flex:1;cursor:pointer;border:1px solid #28304e;background:#0d1224;color:var(--fg);border-radius:8px;padding:11px;font:700 12px ui-monospace,monospace}
+.rbtn.copy{border-color:var(--gr);color:var(--gr)}
 .note b{color:var(--gr)}
 
 /* fx + toast */
@@ -156,12 +168,25 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 
     <div class="dock">
       <button class="pump" id="pump" disabled>Pump<span class="pp">+2,500 ◇</span></button>
-      <div class="note">Fast <b>15s</b> round, settled by the live price. Pump to stake on KIRA — a win <b>pays 1.70×</b>, a miss loses the stake, and a move under the <b>0.15% dead-band voids &amp; refunds</b> (so you can't farm tiny front-runnable ticks). Pumping grows your bet, <b>never</b> her odds. House risk is a separate, capped wallet.</div>
+      <button class="cashout" id="cashout">↦ Cash out · get receipt</button>
+      <div class="note">Fast round settled by the <b>real Pyth SOL/USD price</b>. Pump to stake on KIRA (UP) — a win <b>pays 1.70×</b>, a miss loses the stake, a move under the <b>dead-band voids &amp; refunds</b>. Cash out any time for a receipt of what you're owed.</div>
     </div>
   </div>
 
   <div class="toast" id="toast"><div class="big" id="toastBig"></div><div class="sm" id="toastSm"></div></div>
-  <div class="demo">DEMO · mock stack &amp; outcome</div>
+  <div class="demo">PHASE 1 · play-money · real SOL price</div>
+
+  <div class="rcpt" id="rcpt">
+    <div class="rcptcard">
+      <div class="rtitle">◇ PAYOUT RECEIPT</div>
+      <div class="rrow"><span>Wallet</span><b id="rWallet">—</b></div>
+      <div class="rrow"><span>Owed</span><b id="rAmount" style="color:var(--gr)">—</b></div>
+      <div class="rrow"><span>Receipt</span><b id="rId">—</b></div>
+      <div class="rrow"><span>Time</span><b id="rTime">—</b></div>
+      <div class="rnote">Send this receipt to <b>@yksanjo</b> to claim your $SOAG (winnings or refund). Play-money beta — payouts are hand-run.</div>
+      <div class="rbtns"><button class="rbtn copy" id="rCopy">Copy receipt</button><button class="rbtn" id="rClose">Close</button></div>
+    </div>
+  </div>
 
   <div class="gate" id="gate">
     <div class="gcard">
@@ -182,9 +207,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
 const COMMIT = 100000, PUMP = 2500, PAYOUT = 1.7; // 1.7x = ~15% house edge (hardened)
-const DEADBAND = 0.15; // moves smaller than this % VOID + refund (kills lead-lag picks)
-const BET = 7, LIVE = 5, IMPACT = 0.4, SETTLE = 2.6; // seconds
-const S = { bal: 0, stake: 0, field: 5000, committed: false, phase: "bet", pt: 0, winner: null, target: 0 };
+const DEADBAND = 0.05; // % move under this VOIDs+refunds. Phase 1 (play-money) uses a
+                       // small band so real short-window SOL moves resolve; Phase 2 raises it.
+const BET = 7, LIVE = 6, IMPACT = 0.4, SETTLE = 2.6; // seconds
+const S = { bal: 0, stake: 0, field: 5000, committed: false, phase: "bet", pt: 0, winner: null, void: false, openPrice: null, closePrice: null, livePrice: null, fetchT: 0 };
+
+// ---- REAL price: Pyth SOL/USD via the free Hermes API (no server, no chain) ----
+const PYTH_HERMES = "https://hermes.pyth.network/v2/updates/price/latest?ids[]=ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
+async function fetchSolRaw() {
+  try {
+    const r = await fetch(PYTH_HERMES);
+    const j = await r.json();
+    const p = j.parsed[0].price; // { price: "1501234567", expo: -8 }
+    return Number(p.price); // raw integer at fixed expo — fine for ratio comparisons
+  } catch (e) { return null; }
+}
+function resolveReal() {
+  if (!S.openPrice || !S.closePrice) { S.void = true; S.winner = null; return; } // no price -> refund
+  const moveBps = ((S.closePrice - S.openPrice) / S.openPrice) * 10000;
+  if (Math.abs(moveBps) < DEADBAND * 100) { S.void = true; S.winner = null; return; }
+  S.void = false;
+  S.winner = S.closePrice > S.openPrice ? "you" : "foe"; // player backs KIRA = "up"
+}
 
 // ---- audio juice ----
 let actx;
@@ -218,6 +262,7 @@ function syncHUD() {
   const frac = (S.stake + S.field) ? S.stake / (S.stake + S.field) : 0;
   $("stakefill").style.width = (frac * 100).toFixed(1) + "%";
   $("foefill").style.width = ((1 - frac) * 100).toFixed(1) + "%";
+  persistBalance();
 }
 
 function floatText(txt) {
@@ -273,23 +318,47 @@ $("connectBtn").addEventListener("click", async () => {
   }
 });
 
+// ---- balance persistence (per wallet, play-money) ----
+const balKey = () => WALLET ? "arena_bal_" + WALLET : null;
+function persistBalance() { const k = balKey(); if (k) localStorage.setItem(k, String(Math.round(S.bal))); }
+function loadBalance() { const k = balKey(); if (!k) return null; const v = localStorage.getItem(k); return v == null ? null : Number(v); }
+
 // ---- commit gate ----
 $("commit").addEventListener("click", () => {
   if (S.committed) return; S.committed = true; $("gate").classList.add("hide"); blip(300, 0.1, "sawtooth", 0.05);
+  const saved = loadBalance();
+  const target = saved != null ? saved : COMMIT; // returning players resume their stack
   const t0 = performance.now();
-  (function roll(now) { const k = Math.min(1, (now - t0) / 700); S.bal = Math.round(COMMIT * (k * k * (3 - 2 * k))); $("bal").textContent = fmt(S.bal);
+  (function roll(now) { const k = Math.min(1, (now - t0) / 700); S.bal = Math.round(target * (k * k * (3 - 2 * k))); $("bal").textContent = fmt(S.bal);
     if (k < 1) { if (Math.random() < 0.4) blip(500 + k * 700, 0.03, "square", 0.03); requestAnimationFrame(roll); }
-    else { S.bal = COMMIT; syncHUD(); blip(880, 0.18, "triangle", 0.05); $("pump").disabled = false; } })(t0);
+    else { S.bal = target; syncHUD(); persistBalance(); blip(880, 0.18, "triangle", 0.05); $("pump").disabled = false; } })(t0);
+});
+
+// ---- cash out -> receipt (winnings or refund) ----
+$("cashout").addEventListener("click", () => {
+  if (!S.committed) { toast("ENTER FIRST", "Commit to play, then cash out for a receipt.", "lose"); return; }
+  const amount = Math.round(S.bal);
+  const ts = new Date().toISOString().replace("T", " ").slice(0, 19) + " UTC";
+  // short reference id (client-side ref, not a signature — Phase 1 beta)
+  const id = "AR-" + (Math.abs(hashStr((WALLET || "anon") + amount + ts)) % 1e8).toString(36).toUpperCase();
+  $("rWallet").textContent = WALLET ? WALLET.slice(0, 6) + "…" + WALLET.slice(-6) : "connect wallet to be payable";
+  $("rAmount").textContent = "◇ " + fmt(amount) + " $SOAG";
+  $("rId").textContent = id; $("rTime").textContent = ts;
+  $("rcpt").dataset.full = `AGENT ARENA — PAYOUT RECEIPT\nwallet: ${WALLET || "(not connected)"}\nowed: ${fmt(amount)} $SOAG\nreceipt: ${id}\ntime: ${ts}\nclaim from @yksanjo`;
+  $("rcpt").classList.add("show");
+});
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return h; }
+$("rClose").addEventListener("click", () => $("rcpt").classList.remove("show"));
+$("rCopy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("rcpt").dataset.full); $("rCopy").textContent = "Copied ✓"; setTimeout(() => $("rCopy").textContent = "Copy receipt", 1500); } catch (e) {}
 });
 
 // ---- round logic ----
 function lockBets() {
-  S.phase = "live"; S.pt = 0;
-  S.target = (Math.random() < 0.5 ? 1 : -1) * (Math.random() * 1.8); // can land inside the dead-band
-  S.void = Math.abs(S.target) < DEADBAND;
-  S.winner = S.target >= 0 ? "you" : "foe";
+  S.phase = "live"; S.pt = 0; S.fetchT = 0;
+  // open price was snapshotted at round start (newRound); close is read live below.
   $("pump").disabled = true;
-  $("phasetxt").textContent = "LIVE — SOL, 15s"; $("phasetxt").className = "phasetxt live";
+  $("phasetxt").textContent = "LIVE — real SOL/USD"; $("phasetxt").className = "phasetxt live";
   blip(150, 0.18, "sawtooth", 0.06);
 }
 function settle() {
@@ -318,16 +387,17 @@ function settle() {
   syncHUD();
 }
 function newRound() {
-  S.stake = 0; S.phase = "bet"; S.pt = 0; S.winner = null; S.target = 0;
+  S.stake = 0; S.phase = "bet"; S.pt = 0; S.winner = null; S.void = false;
+  S.openPrice = null; S.closePrice = null; S.livePrice = null; S.fetchT = 0;
+  fetchSolRaw().then((v) => { if (v) S.openPrice = v; }); // snapshot the open at round start
   S.field = 4000 + Math.floor(Math.random() * 6000);
   $("youF").style.filter = "none"; $("foeF").style.filter = "none";
   $("youF").style.transform = ""; $("foeF").style.transform = "";
   hideToast(); $("pump").disabled = !S.committed;
   $("phasetxt").textContent = "BETTING OPEN — back KIRA"; $("phasetxt").className = "phasetxt";
   $("livepct").textContent = ""; $("timerfill").style.width = "100%";
-  const toks = ["SOL", "BONK", "ETH", "WIF"]; const tk = toks[Math.floor(Math.random() * toks.length)];
-  $("meq").innerHTML = `KIRA vs NEXUS — <b>will ${tk} be up in 24h?</b>`;
-  $("note") && 0; window._tok = tk; syncHUD();
+  $("meq").innerHTML = `KIRA (UP) vs NEXUS (DOWN) — <b>will SOL be up this round?</b>`;
+  persistBalance(); syncHUD();
 }
 function toast(b, s, c) { $("toastBig").textContent = b; $("toastBig").className = "big " + (c || ""); $("toastSm").textContent = s; $("toast").classList.add("show"); }
 function hideToast() { $("toast").classList.remove("show"); }
@@ -354,11 +424,18 @@ function loop(t) {
       const p = Math.min(1, S.pt / LIVE);
       $("youF").style.transform = `translateX(${ease(p) * 22}px)`;
       $("foeF").style.transform = `translateX(${-ease(p) * 22}px)`;
-      const pct = S.target * ease(p) + (Math.random() - 0.5) * 0.8 * (1 - p), up = pct >= 0;
-      $("livepct").textContent = (up ? "▲ +" : "▼ ") + Math.abs(pct).toFixed(2) + "%";
-      $("livepct").style.color = up ? "var(--gr)" : "var(--rd)";
-      if (S.pt >= LIVE) { S.phase = "impact"; S.pt = 0; $("flash").style.opacity = "0.85"; addShake(0.6);
-        const [cx, cy] = centerXY(); burst(cx, cy, "255,255,255", 90, 1.8); blip(90, 0.25, "square", 0.07); }
+      S.fetchT += dt; // poll the REAL SOL price ~1/sec for the live ticker
+      if (S.fetchT > 1) { S.fetchT = 0; fetchSolRaw().then((v) => { if (v) S.livePrice = v; }); }
+      if (S.openPrice && S.livePrice) {
+        const pct = ((S.livePrice - S.openPrice) / S.openPrice) * 100, up = pct >= 0;
+        $("livepct").textContent = (up ? "▲ +" : "▼ ") + Math.abs(pct).toFixed(3) + "%";
+        $("livepct").style.color = up ? "var(--gr)" : "var(--rd)";
+      } else { $("livepct").textContent = "reading SOL…"; $("livepct").style.color = "var(--mut)"; }
+      if (S.pt >= LIVE) {
+        S.closePrice = S.livePrice || S.openPrice; resolveReal();
+        S.phase = "impact"; S.pt = 0; $("flash").style.opacity = "0.85"; addShake(0.6);
+        const [cx, cy] = centerXY(); burst(cx, cy, "255,255,255", 90, 1.8); blip(90, 0.25, "square", 0.07);
+      }
     } else if (S.phase === "impact") {
       $("flash").style.opacity = Math.max(0, 0.85 - S.pt * 3);
       $("youF").style.transform = ""; $("foeF").style.transform = "";
