@@ -8,6 +8,12 @@
     "test": "node --test",
     "experiment": "node src/cli.js",
     "build": "node src/build.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test:vault": "node tests/vault.test.mjs"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.95.3"
   }
 }
