@@ -337,7 +337,14 @@ async function soagBalance(owner) {
 
 $("connectBtn").addEventListener("click", async () => {
   const prov = window.phantom?.solana || (window.solana?.isPhantom ? window.solana : null);
-  if (!prov) { window.open("https://phantom.app/", "_blank"); return; }
+  if (!prov) {
+    // No injected wallet. On mobile, bounce the dApp INTO Phantom's in-app
+    // browser (where window.solana exists); on desktop, send to install page.
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) { location.href = "https://phantom.app/ul/browse/" + encodeURIComponent(location.href) + "?ref=" + encodeURIComponent(location.origin); }
+    else { window.open("https://phantom.app/", "_blank"); }
+    return;
+  }
   $("connectBtn").textContent = "Connecting…"; $("connectBtn").disabled = true;
   try {
     const res = await prov.connect();
