@@ -286,8 +286,44 @@ $("pump").addEventListener("click", () => {
 
 // ---- real wallet connect + real $SOAG balance (read-only, no funds move yet) ----
 const SOAG_MINT = "ADue87cPcDhsyGq2hrDsukp7j8AFTSnaYHSanDATpump";
+const SOAG_DECIMALS = 6;
 const RPC = "https://api.mainnet-beta.solana.com";
 let WALLET = null, SOAG_BAL = null;
+
+// ---- REAL-MONEY entry (charge $SOAG to enter) ----
+// Gated OFF by default so the public page stays play-money/safe. Activate per
+// player with ?real=1 — used for testing until the payout/refund backend exists.
+// Do NOT remove the gate for everyone until winners can actually be paid back.
+const CHIP_IN = "H1deBGb2XDpDk96XohRGyGrvnGiWsQV5Kyu6zS9xWKCW"; // Yoshi's chip-in wallet
+const ENTRY_SOAG = 100000; // entry cost in whole $SOAG
+const REAL_MONEY = new URLSearchParams(location.search).has("real");
+
+async function chargeEntry() {
+  const [web3, spl] = await Promise.all([
+    import("https://esm.sh/@solana/web3.js@1.95.3"),
+    import("https://esm.sh/@solana/spl-token@0.4.9"),
+  ]);
+  const conn = new web3.Connection(RPC, "confirmed");
+  const player = new web3.PublicKey(WALLET);
+  const dest = new web3.PublicKey(CHIP_IN);
+  const mint = new web3.PublicKey(SOAG_MINT);
+  const TP = spl.TOKEN_2022_PROGRAM_ID;
+  const fromAta = spl.getAssociatedTokenAddressSync(mint, player, false, TP);
+  const toAta = spl.getAssociatedTokenAddressSync(mint, dest, false, TP);
+  const ixs = [];
+  if (!(await conn.getAccountInfo(toAta))) {
+    ixs.push(spl.createAssociatedTokenAccountInstruction(player, toAta, dest, mint, TP)); // player pays the ATA rent once
+  }
+  const amount = BigInt(ENTRY_SOAG) * (10n ** BigInt(SOAG_DECIMALS));
+  ixs.push(spl.createTransferCheckedInstruction(fromAta, mint, toAta, player, amount, SOAG_DECIMALS, [], TP));
+  const tx = new web3.Transaction().add(...ixs);
+  tx.feePayer = player;
+  tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash;
+  const provider = window.phantom?.solana || window.solana;
+  const { signature } = await provider.signAndSendTransaction(tx);
+  await conn.confirmTransaction(signature, "confirmed");
+  return signature;
+}
 
 async function soagBalance(owner) {
   const body = { jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
@@ -324,15 +360,29 @@ function persistBalance() { const k = balKey(); if (k) localStorage.setItem(k, S
 function loadBalance() { const k = balKey(); if (!k) return null; const v = localStorage.getItem(k); return v == null ? null : Number(v); }
 
 // ---- commit gate ----
-$("commit").addEventListener("click", () => {
-  if (S.committed) return; S.committed = true; $("gate").classList.add("hide"); blip(300, 0.1, "sawtooth", 0.05);
-  const saved = loadBalance();
-  const target = saved != null ? saved : COMMIT; // returning players resume their stack
+$("commit").addEventListener("click", async () => {
+  if (S.committed) return;
+  if (REAL_MONEY) {
+    if (!WALLET) { toast("CONNECT FIRST", "Connect your wallet, then commit.", "lose"); return; }
+    $("commit").textContent = "Confirm in wallet…"; $("commit").disabled = true;
+    try { const sig = await chargeEntry(); console.log("entry tx", sig); }
+    catch (e) { $("commit").textContent = "⟡ Commit 100,000 ◇"; $("commit").disabled = false;
+      toast("ENTRY FAILED", (e && e.message) ? e.message.slice(0, 80) : "transfer rejected", "lose"); return; }
+  }
+  S.committed = true; $("gate").classList.add("hide"); blip(300, 0.1, "sawtooth", 0.05);
+  // real entry => your stack IS your buy-in; play-money => resume saved or grant COMMIT
+  const target = REAL_MONEY ? ENTRY_SOAG : (loadBalance() ?? COMMIT);
   const t0 = performance.now();
   (function roll(now) { const k = Math.min(1, (now - t0) / 700); S.bal = Math.round(target * (k * k * (3 - 2 * k))); $("bal").textContent = fmt(S.bal);
     if (k < 1) { if (Math.random() < 0.4) blip(500 + k * 700, 0.03, "square", 0.03); requestAnimationFrame(roll); }
     else { S.bal = target; syncHUD(); persistBalance(); blip(880, 0.18, "triangle", 0.05); $("pump").disabled = false; } })(t0);
 });
+
+// when real-money mode is on, make the gate say so clearly
+if (REAL_MONEY) {
+  const g = document.querySelector(".gsub"); if (g) g.innerHTML = `<b>REAL ENTRY</b> — pressing commit sends <b>100,000 $SOAG</b> from your wallet to the arena. You play with that stake; winnings + unspent are paid back. Beta — payouts are hand-run.`;
+  const d = document.querySelector(".demo"); if (d) d.textContent = "REAL $SOAG · beta";
+}
 
 // ---- cash out -> receipt (winnings or refund) ----
 $("cashout").addEventListener("click", () => {
