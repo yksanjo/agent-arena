@@ -93,10 +93,11 @@ pub mod arena_vault {
         pb.principal = pb.principal.checked_add(received).ok_or(VaultError::Math)?;
         pb.balance = pb.balance.checked_add(received).ok_or(VaultError::Math)?;
 
+        let deposits_amt = ctx.accounts.deposits_vault.amount;
+        let house_amt = ctx.accounts.house_vault.amount;
         let v = &mut ctx.accounts.vault;
         v.total_principal = v.total_principal.checked_add(received).ok_or(VaultError::Math)?;
-
-        v.assert_solvent(&ctx.accounts.deposits_vault, &ctx.accounts.house_vault)
+        v.check_solvency(deposits_amt, house_amt)
     }
 
     /// Apply a settled round result. ONLY the settlement authority may call it,
@@ -109,13 +110,14 @@ pub mod arena_vault {
     /// accounts for open/close, enforce the dead-band, and compute the outcome
     /// here so the authority cannot mis-call rounds.
     pub fn settle_round(ctx: Context<SettleRound>, stake: u64, reserved: u64, player_won: bool, voided: bool) -> Result<()> {
-        let v = &mut ctx.accounts.vault;
-        require!(!v.paused, VaultError::Paused);
-        let pb = &mut ctx.accounts.player_balance;
-
+        require!(!ctx.accounts.vault.paused, VaultError::Paused);
         if voided {
             return Ok(()); // dead-band: stake stays in player balance, nothing moves
         }
+        let deposits_amt = ctx.accounts.deposits_vault.amount;
+        let house_amt = ctx.accounts.house_vault.amount;
+        let pb = &mut ctx.accounts.player_balance;
+        let v = &mut ctx.accounts.vault;
         if player_won {
             // House pays `reserved` (the net win) into the player's balance as a
             // liability. Must be covered by the house vault.
@@ -128,43 +130,46 @@ pub mod arena_vault {
             // Loss reduces what the house owes overall (revenue), floored at 0.
             v.total_house_liabilities = v.total_house_liabilities.saturating_sub(stake.min(reserved));
         }
-        v.assert_solvent(&ctx.accounts.deposits_vault, &ctx.accounts.house_vault)
+        v.check_solvency(deposits_amt, house_amt)
     }
 
     /// Player withdraws up to their on-chain balance. Principal portion is paid
     /// from `deposits_vault`; any winnings portion is paid from `house_vault`.
     /// No voucher / off-chain signature can inflate this — balance is on-chain.
     pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> Result<()> {
-        let pb = &mut ctx.accounts.player_balance;
         require!(amount > 0, VaultError::ZeroAmount);
-        require!(pb.balance >= amount, VaultError::InsufficientBalance);
+        let (principal, balance) = {
+            let pb = &ctx.accounts.player_balance;
+            (pb.principal, pb.balance)
+        };
+        require!(balance >= amount, VaultError::InsufficientBalance);
 
         // Split: pay principal first from deposits, remainder (winnings) from house.
-        let from_principal = amount.min(pb.principal);
+        let from_principal = amount.min(principal);
         let from_house = amount.checked_sub(from_principal).ok_or(VaultError::Math)?;
+        let decimals = ctx.accounts.soag_mint.decimals;
 
-        let seeds: &[&[u8]] = &[b"vault", &[ctx.accounts.vault.bump]];
+        let bump = [ctx.accounts.vault.bump];
+        let seeds: &[&[&[u8]]] = &[&[b"vault", &bump]];
         if from_principal > 0 {
-            token_interface::transfer_checked(
-                ctx.accounts.transfer_ctx_deposits(&[seeds]),
-                from_principal,
-                ctx.accounts.soag_mint.decimals,
-            )?;
+            token_interface::transfer_checked(ctx.accounts.transfer_ctx_deposits(seeds), from_principal, decimals)?;
         }
         if from_house > 0 {
-            token_interface::transfer_checked(
-                ctx.accounts.transfer_ctx_house(&[seeds]),
-                from_house,
-                ctx.accounts.soag_mint.decimals,
-            )?;
+            token_interface::transfer_checked(ctx.accounts.transfer_ctx_house(seeds), from_house, decimals)?;
         }
 
-        pb.balance -= amount;
-        pb.principal -= from_principal;
+        // Read post-transfer balances, then update state.
+        let deposits_amt = ctx.accounts.deposits_vault.amount;
+        let house_amt = ctx.accounts.house_vault.amount;
+        {
+            let pb = &mut ctx.accounts.player_balance;
+            pb.balance -= amount;
+            pb.principal -= from_principal;
+        }
         let v = &mut ctx.accounts.vault;
         v.total_principal = v.total_principal.checked_sub(from_principal).ok_or(VaultError::Math)?;
         v.total_house_liabilities = v.total_house_liabilities.saturating_sub(from_house);
-        v.assert_solvent(&ctx.accounts.deposits_vault, &ctx.accounts.house_vault)
+        v.check_solvency(deposits_amt, house_amt)
     }
 
     /// Admin funds the house bankroll. This is the ONLY way tokens enter the
@@ -193,14 +198,11 @@ pub struct Vault {
 
 impl Vault {
     /// THE invariant. Both segregated accounts must independently cover their
-    /// obligations at every state transition.
-    fn assert_solvent(
-        &self,
-        deposits: &InterfaceAccount<TokenAccount>,
-        house: &InterfaceAccount<TokenAccount>,
-    ) -> Result<()> {
-        require!(deposits.amount >= self.total_principal, VaultError::InsolventDeposits);
-        require!(house.amount >= self.total_house_liabilities, VaultError::InsolventHouse);
+    /// obligations at every state transition. Takes plain amounts (read before
+    /// the mutable borrow) to avoid borrowing ctx.accounts twice.
+    fn check_solvency(&self, deposits_amt: u64, house_amt: u64) -> Result<()> {
+        require!(deposits_amt >= self.total_principal, VaultError::InsolventDeposits);
+        require!(house_amt >= self.total_house_liabilities, VaultError::InsolventHouse);
         Ok(())
     }
 }
@@ -300,7 +302,7 @@ pub struct Withdraw<'info> {
     pub token_program: Interface<'info, TokenInterface>,
 }
 impl<'info> Withdraw<'info> {
-    fn transfer_ctx_deposits(&self, s: &[&[&[u8]]]) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+    fn transfer_ctx_deposits<'a>(&self, s: &'a [&'a [&'a [u8]]]) -> CpiContext<'a, 'a, 'a, 'info, TransferChecked<'info>> {
         CpiContext::new_with_signer(self.token_program.to_account_info(), TransferChecked {
             from: self.deposits_vault.to_account_info(),
             mint: self.soag_mint.to_account_info(),
@@ -308,7 +310,7 @@ impl<'info> Withdraw<'info> {
             authority: self.vault.to_account_info(),
         }, s)
     }
-    fn transfer_ctx_house(&self, s: &[&[&[u8]]]) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+    fn transfer_ctx_house<'a>(&self, s: &'a [&'a [&'a [u8]]]) -> CpiContext<'a, 'a, 'a, 'info, TransferChecked<'info>> {
         CpiContext::new_with_signer(self.token_program.to_account_info(), TransferChecked {
             from: self.house_vault.to_account_info(),
             mint: self.soag_mint.to_account_info(),
