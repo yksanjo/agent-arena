@@ -226,12 +226,121 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// NOTE: remaining #[derive(Accounts)] structs (Deposit, SettleRound, Withdraw,
-// FundHouse) + the transfer_ctx_* helpers are scaffolded in the full build.
-// They enforce: deposits_vault/house_vault == the pubkeys bound at init, mint ==
-// soag_mint, player_balance PDA = [b"balance", owner], settle signer ==
-// settlement_authority, fund_house source owned by admin. Omitted here to keep
-// this v0 focused on the funds-flow logic above for review.
+// Note on emergency_withdraw: because balances are tracked ON-CHAIN (settlement
+// is on-chain, not a signed off-chain voucher), `withdraw` never depends on the
+// settlement authority being online — a player can always reclaim their balance
+// directly. So the "operator goes dark freezes funds" problem from the original
+// voucher design simply does not exist here. That is a direct benefit of moving
+// settlement on-chain and is why there is no separate emergency path.
+
+#[derive(Accounts)]
+pub struct Deposit<'info> {
+    #[account(mut, seeds = [b"vault"], bump = vault.bump,
+        has_one = soag_mint, has_one = deposits_vault, has_one = house_vault)]
+    pub vault: Account<'info, Vault>,
+    pub soag_mint: InterfaceAccount<'info, Mint>,
+    #[account(mut, address = vault.deposits_vault)]
+    pub deposits_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(address = vault.house_vault)]
+    pub house_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(mut, token::mint = soag_mint, token::authority = owner)]
+    pub owner_token: InterfaceAccount<'info, TokenAccount>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    #[account(init_if_needed, payer = owner, space = 8 + 32 + 8 + 8,
+        seeds = [b"balance", owner.key().as_ref()], bump)]
+    pub player_balance: Account<'info, PlayerBalance>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub system_program: Program<'info, System>,
+}
+impl<'info> Deposit<'info> {
+    fn transfer_ctx_in(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(self.token_program.to_account_info(), TransferChecked {
+            from: self.owner_token.to_account_info(),
+            mint: self.soag_mint.to_account_info(),
+            to: self.deposits_vault.to_account_info(),
+            authority: self.owner.to_account_info(),
+        })
+    }
+}
+
+#[derive(Accounts)]
+pub struct SettleRound<'info> {
+    #[account(mut, seeds = [b"vault"], bump = vault.bump,
+        has_one = deposits_vault, has_one = house_vault,
+        constraint = vault.settlement_authority == authority.key() @ VaultError::Unauthorized)]
+    pub vault: Account<'info, Vault>,
+    pub authority: Signer<'info>,
+    #[account(mut, has_one = owner, seeds = [b"balance", owner.key().as_ref()], bump)]
+    pub player_balance: Account<'info, PlayerBalance>,
+    /// CHECK: identity only; bound via player_balance has_one
+    pub owner: UncheckedAccount<'info>,
+    #[account(address = vault.deposits_vault)]
+    pub deposits_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(address = vault.house_vault)]
+    pub house_vault: InterfaceAccount<'info, TokenAccount>,
+}
+
+#[derive(Accounts)]
+pub struct Withdraw<'info> {
+    #[account(mut, seeds = [b"vault"], bump = vault.bump,
+        has_one = soag_mint, has_one = deposits_vault, has_one = house_vault)]
+    pub vault: Account<'info, Vault>,
+    pub soag_mint: InterfaceAccount<'info, Mint>,
+    #[account(mut, address = vault.deposits_vault)]
+    pub deposits_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(mut, address = vault.house_vault)]
+    pub house_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(mut, has_one = owner, seeds = [b"balance", owner.key().as_ref()], bump)]
+    pub player_balance: Account<'info, PlayerBalance>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
+    #[account(mut, token::mint = soag_mint, token::authority = owner)]
+    pub owner_token: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
+}
+impl<'info> Withdraw<'info> {
+    fn transfer_ctx_deposits(&self, s: &[&[&[u8]]]) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new_with_signer(self.token_program.to_account_info(), TransferChecked {
+            from: self.deposits_vault.to_account_info(),
+            mint: self.soag_mint.to_account_info(),
+            to: self.owner_token.to_account_info(),
+            authority: self.vault.to_account_info(),
+        }, s)
+    }
+    fn transfer_ctx_house(&self, s: &[&[&[u8]]]) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new_with_signer(self.token_program.to_account_info(), TransferChecked {
+            from: self.house_vault.to_account_info(),
+            mint: self.soag_mint.to_account_info(),
+            to: self.owner_token.to_account_info(),
+            authority: self.vault.to_account_info(),
+        }, s)
+    }
+}
+
+#[derive(Accounts)]
+pub struct FundHouse<'info> {
+    #[account(seeds = [b"vault"], bump = vault.bump, has_one = admin, has_one = soag_mint, has_one = house_vault)]
+    pub vault: Account<'info, Vault>,
+    pub soag_mint: InterfaceAccount<'info, Mint>,
+    #[account(mut, address = vault.house_vault)]
+    pub house_vault: InterfaceAccount<'info, TokenAccount>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(mut, token::mint = soag_mint, token::authority = admin)]
+    pub admin_token: InterfaceAccount<'info, TokenAccount>,
+    pub token_program: Interface<'info, TokenInterface>,
+}
+impl<'info> FundHouse<'info> {
+    fn transfer_ctx(&self) -> CpiContext<'_, '_, '_, 'info, TransferChecked<'info>> {
+        CpiContext::new(self.token_program.to_account_info(), TransferChecked {
+            from: self.admin_token.to_account_info(),
+            mint: self.soag_mint.to_account_info(),
+            to: self.house_vault.to_account_info(),
+            authority: self.admin.to_account_info(),
+        })
+    }
+}
 
 #[error_code]
 pub enum VaultError {
@@ -242,4 +351,5 @@ pub enum VaultError {
     #[msg("deposits vault under-collateralized")] InsolventDeposits,
     #[msg("house vault cannot cover liabilities")] InsolventHouse,
     #[msg("mint has a freeze authority")] MintHasFreezeAuthority,
+    #[msg("caller is not the settlement authority")] Unauthorized,
 }
