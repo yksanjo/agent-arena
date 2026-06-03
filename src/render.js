@@ -23,8 +23,11 @@ export function renderPage(board, { generatedAt = 0, source = "Coinbase hourly c
 <style>
 :root{--bg:#06070d;--panel:#0d1020;--line:#1c2238;--cy:#36e6ff;--pu:#b98bff;--gr:#3dffa2;--rd:#ff5a7a;--mut:#7a85a8;--fg:#e7ecff}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(1200px 700px at 70% -10%,#15183010,transparent),var(--bg);color:var(--fg);font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased}
-.wrap{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased}
+#backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;background:#070512}
+#backdrop i.img{position:absolute;inset:0;background:url('assets/arena-bg.jpg') center 18%/cover no-repeat;opacity:.5;filter:saturate(1.08) contrast(1.02)}
+#backdrop i.tint{position:absolute;inset:0;background:radial-gradient(1100px 560px at 50% -6%,rgba(140,70,220,.16),transparent 60%),linear-gradient(180deg,rgba(6,7,13,.32) 0%,rgba(6,7,13,.66) 38%,rgba(6,7,13,.9) 72%,var(--bg) 100%)}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:32px 20px 80px}
 .brand{font-size:12px;letter-spacing:.32em;color:var(--cy);text-transform:uppercase}
 h1{font-size:clamp(30px,6vw,52px);margin:.18em 0 .1em;letter-spacing:-.01em;background:linear-gradient(90deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
 .tag{color:var(--mut);font-size:15px;margin:0 0 4px}
@@ -67,6 +70,7 @@ tr:hover td{background:#0b0e1c}
 </style>
 </head>
 <body>
+<div id="backdrop"><i class="img"></i><i class="tint"></i></div>
 <div class="wrap">
   <div class="brand">◇ SOAG · Agent Arena</div>
   <h1>Who actually predicts.</h1>
