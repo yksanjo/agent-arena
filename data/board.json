@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1780443130672,
+  "generatedAt": 1780453585351,
   "tokens": [
     "BTC",
     "ETH",
@@ -14,21 +14,293 @@
     "step": 8
   },
   "totalClaims": 636,
-  "brierSpread": 0.0011,
+  "brierSpread": 0.0012,
   "leaderboard": [
+    {
+      "id": "overconfident",
+      "name": "YUI",
+      "thesis": "right idea (momentum) but pushes probabilities to the extremes",
+      "n": 636,
+      "elo": 1099,
+      "brier": 0.2503,
+      "logLoss": 0.6937,
+      "skill": -0.001,
+      "ece": 0.0092,
+      "record": {
+        "w": 1630,
+        "l": 1550,
+        "d": 0
+      },
+      "calibration": [
+        {
+          "mid": 0.05,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.15,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.25,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.35,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.45,
+          "n": 306,
+          "hitRate": 0.4869
+        },
+        {
+          "mid": 0.55,
+          "n": 330,
+          "hitRate": 0.4939
+        },
+        {
+          "mid": 0.65,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.75,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.85,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.95,
+          "n": 0,
+          "hitRate": null
+        }
+      ]
+    },
+    {
+      "id": "momentum",
+      "name": "NEXUS",
+      "thesis": "recent strength continues",
+      "n": 636,
+      "elo": 1053,
+      "brier": 0.2501,
+      "logLoss": 0.6933,
+      "skill": -0.0004,
+      "ece": 0.0093,
+      "record": {
+        "w": 1621,
+        "l": 1559,
+        "d": 0
+      },
+      "calibration": [
+        {
+          "mid": 0.05,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.15,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.25,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.35,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.45,
+          "n": 306,
+          "hitRate": 0.4869
+        },
+        {
+          "mid": 0.55,
+          "n": 330,
+          "hitRate": 0.4939
+        },
+        {
+          "mid": 0.65,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.75,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.85,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.95,
+          "n": 0,
+          "hitRate": null
+        }
+      ]
+    },
+    {
+      "id": "humble",
+      "name": "KIRA",
+      "thesis": "same read as momentum but stays near 0.5 — well-calibrated, low resolution",
+      "n": 636,
+      "elo": 1004,
+      "brier": 0.25,
+      "logLoss": 0.6932,
+      "skill": -0.0001,
+      "ece": 0.0094,
+      "record": {
+        "w": 1603,
+        "l": 1577,
+        "d": 0
+      },
+      "calibration": [
+        {
+          "mid": 0.05,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.15,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.25,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.35,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.45,
+          "n": 306,
+          "hitRate": 0.4869
+        },
+        {
+          "mid": 0.55,
+          "n": 330,
+          "hitRate": 0.4939
+        },
+        {
+          "mid": 0.65,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.75,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.85,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.95,
+          "n": 0,
+          "hitRate": null
+        }
+      ]
+    },
+    {
+      "id": "trend",
+      "name": "ATLAS",
+      "thesis": "slow trend via short vs long average",
+      "n": 636,
+      "elo": 964,
+      "brier": 0.2511,
+      "logLoss": 0.6953,
+      "skill": -0.0043,
+      "ece": 0.0248,
+      "record": {
+        "w": 1469,
+        "l": 1711,
+        "d": 0
+      },
+      "calibration": [
+        {
+          "mid": 0.05,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.15,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.25,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.35,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.45,
+          "n": 310,
+          "hitRate": 0.5097
+        },
+        {
+          "mid": 0.55,
+          "n": 326,
+          "hitRate": 0.4724
+        },
+        {
+          "mid": 0.65,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.75,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.85,
+          "n": 0,
+          "hitRate": null
+        },
+        {
+          "mid": 0.95,
+          "n": 0,
+          "hitRate": null
+        }
+      ]
+    },
     {
       "id": "coinflip",
       "name": "ZERO",
       "thesis": "no information — the 0.25-Brier baseline everyone must beat",
       "n": 636,
-      "elo": 1038,
+      "elo": 959,
       "brier": 0.25,
       "logLoss": 0.6931,
       "skill": 0,
-      "ece": 0.011,
+      "ece": 0.0094,
       "record": {
-        "w": 1623,
-        "l": 1557,
+        "w": 1598,
+        "l": 1582,
         "d": 0
       },
       "calibration": [
@@ -60,75 +332,7 @@
         {
           "mid": 0.55,
           "n": 636,
-          "hitRate": 0.489
-        },
-        {
-          "mid": 0.65,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.75,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.85,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.95,
-          "n": 0,
-          "hitRate": null
-        }
-      ]
-    },
-    {
-      "id": "overconfident",
-      "name": "YUI",
-      "thesis": "right idea (momentum) but pushes probabilities to the extremes",
-      "n": 636,
-      "elo": 1037,
-      "brier": 0.2507,
-      "logLoss": 0.6945,
-      "skill": -0.0028,
-      "ece": 0.023,
-      "record": {
-        "w": 1545,
-        "l": 1635,
-        "d": 0
-      },
-      "calibration": [
-        {
-          "mid": 0.05,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.15,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.25,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.35,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.45,
-          "n": 315,
-          "hitRate": 0.5079
-        },
-        {
-          "mid": 0.55,
-          "n": 321,
-          "hitRate": 0.4704
+          "hitRate": 0.4906
         },
         {
           "mid": 0.65,
@@ -157,14 +361,14 @@
       "name": "ECHO",
       "thesis": "recent moves snap back",
       "n": 636,
-      "elo": 1029,
-      "brier": 0.2497,
-      "logLoss": 0.6926,
-      "skill": 0.001,
-      "ece": 0.0172,
+      "elo": 922,
+      "brier": 0.2499,
+      "logLoss": 0.693,
+      "skill": 0.0003,
+      "ece": 0.0095,
       "record": {
-        "w": 1638,
-        "l": 1542,
+        "w": 1619,
+        "l": 1561,
         "d": 0
       },
       "calibration": [
@@ -190,222 +394,18 @@
         },
         {
           "mid": 0.45,
-          "n": 321,
-          "hitRate": 0.4704
+          "n": 330,
+          "hitRate": 0.4939
         },
         {
           "mid": 0.55,
-          "n": 315,
-          "hitRate": 0.5079
+          "n": 306,
+          "hitRate": 0.4869
         },
         {
           "mid": 0.65,
           "n": 0,
           "hitRate": null
-        },
-        {
-          "mid": 0.75,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.85,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.95,
-          "n": 0,
-          "hitRate": null
-        }
-      ]
-    },
-    {
-      "id": "humble",
-      "name": "KIRA",
-      "thesis": "same read as momentum but stays near 0.5 — well-calibrated, low resolution",
-      "n": 636,
-      "elo": 1017,
-      "brier": 0.2501,
-      "logLoss": 0.6934,
-      "skill": -0.0004,
-      "ece": 0.0195,
-      "record": {
-        "w": 1594,
-        "l": 1586,
-        "d": 0
-      },
-      "calibration": [
-        {
-          "mid": 0.05,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.15,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.25,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.35,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.45,
-          "n": 315,
-          "hitRate": 0.5079
-        },
-        {
-          "mid": 0.55,
-          "n": 321,
-          "hitRate": 0.4704
-        },
-        {
-          "mid": 0.65,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.75,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.85,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.95,
-          "n": 0,
-          "hitRate": null
-        }
-      ]
-    },
-    {
-      "id": "momentum",
-      "name": "NEXUS",
-      "thesis": "recent strength continues",
-      "n": 636,
-      "elo": 1016,
-      "brier": 0.2503,
-      "logLoss": 0.6937,
-      "skill": -0.0011,
-      "ece": 0.0205,
-      "record": {
-        "w": 1568,
-        "l": 1612,
-        "d": 0
-      },
-      "calibration": [
-        {
-          "mid": 0.05,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.15,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.25,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.35,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.45,
-          "n": 315,
-          "hitRate": 0.5079
-        },
-        {
-          "mid": 0.55,
-          "n": 321,
-          "hitRate": 0.4704
-        },
-        {
-          "mid": 0.65,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.75,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.85,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.95,
-          "n": 0,
-          "hitRate": null
-        }
-      ]
-    },
-    {
-      "id": "trend",
-      "name": "ATLAS",
-      "thesis": "slow trend via short vs long average",
-      "n": 636,
-      "elo": 863,
-      "brier": 0.2508,
-      "logLoss": 0.6948,
-      "skill": -0.0032,
-      "ece": 0.0199,
-      "record": {
-        "w": 1572,
-        "l": 1608,
-        "d": 0
-      },
-      "calibration": [
-        {
-          "mid": 0.05,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.15,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.25,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.35,
-          "n": 0,
-          "hitRate": null
-        },
-        {
-          "mid": 0.45,
-          "n": 286,
-          "hitRate": 0.5035
-        },
-        {
-          "mid": 0.55,
-          "n": 349,
-          "hitRate": 0.4785
-        },
-        {
-          "mid": 0.65,
-          "n": 1,
-          "hitRate": 0
         },
         {
           "mid": 0.75,
@@ -428,24 +428,24 @@
   "claimsLog": [
     {
       "token": "WIF",
-      "openTs": 1780354800000,
-      "resolveTs": 1780441200000,
-      "pct": -10.94,
+      "openTs": 1780365600000,
+      "resolveTs": 1780452000000,
+      "pct": -6.84,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.5,
+        "trend": 0.49,
         "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "BTC",
-      "openTs": 1780333200000,
-      "resolveTs": 1780419600000,
-      "pct": -5.84,
+      "openTs": 1780344000000,
+      "resolveTs": 1780430400000,
+      "pct": -5.42,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -458,9 +458,9 @@
     },
     {
       "token": "ETH",
-      "openTs": 1780333200000,
-      "resolveTs": 1780419600000,
-      "pct": -3.4,
+      "openTs": 1780344000000,
+      "resolveTs": 1780430400000,
+      "pct": -4.96,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -473,99 +473,9 @@
     },
     {
       "token": "SOL",
-      "openTs": 1780333200000,
-      "resolveTs": 1780419600000,
-      "pct": -5.07,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.51,
-        "overconfident": 0.5,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "BONK",
-      "openTs": 1780333200000,
-      "resolveTs": 1780419600000,
-      "pct": -6.68,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.52,
-        "overconfident": 0.51,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "DOGE",
-      "openTs": 1780333200000,
-      "resolveTs": 1780419600000,
-      "pct": -4.52,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.51,
-        "overconfident": 0.5,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "WIF",
-      "openTs": 1780326000000,
-      "resolveTs": 1780412400000,
-      "pct": -2.73,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.49,
-        "overconfident": 0.5,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "BTC",
-      "openTs": 1780304400000,
-      "resolveTs": 1780390800000,
-      "pct": -4.77,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.5,
-        "overconfident": 0.5,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "ETH",
-      "openTs": 1780304400000,
-      "resolveTs": 1780390800000,
-      "pct": -0.67,
-      "outcome": 0,
-      "calls": {
-        "coinflip": 0.5,
-        "momentum": 0.5,
-        "meanrev": 0.5,
-        "trend": 0.5,
-        "overconfident": 0.5,
-        "humble": 0.5
-      }
-    },
-    {
-      "token": "SOL",
-      "openTs": 1780304400000,
-      "resolveTs": 1780390800000,
-      "pct": -2.46,
+      "openTs": 1780344000000,
+      "resolveTs": 1780430400000,
+      "pct": -7.03,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -578,9 +488,9 @@
     },
     {
       "token": "BONK",
-      "openTs": 1780304400000,
-      "resolveTs": 1780390800000,
-      "pct": -0.73,
+      "openTs": 1780344000000,
+      "resolveTs": 1780430400000,
+      "pct": -7.78,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -593,9 +503,9 @@
     },
     {
       "token": "DOGE",
-      "openTs": 1780304400000,
-      "resolveTs": 1780390800000,
-      "pct": -1.29,
+      "openTs": 1780344000000,
+      "resolveTs": 1780430400000,
+      "pct": -6.38,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -608,24 +518,24 @@
     },
     {
       "token": "WIF",
-      "openTs": 1780297200000,
-      "resolveTs": 1780383600000,
-      "pct": 1.08,
-      "outcome": 1,
+      "openTs": 1780336800000,
+      "resolveTs": 1780423200000,
+      "pct": -5.79,
+      "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.47,
-        "overconfident": 0.49,
+        "trend": 0.53,
+        "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "BTC",
-      "openTs": 1780275600000,
-      "resolveTs": 1780362000000,
-      "pct": -3.61,
+      "openTs": 1780315200000,
+      "resolveTs": 1780401600000,
+      "pct": -4.47,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -638,55 +548,55 @@
     },
     {
       "token": "ETH",
-      "openTs": 1780275600000,
-      "resolveTs": 1780362000000,
-      "pct": -0.73,
+      "openTs": 1780315200000,
+      "resolveTs": 1780401600000,
+      "pct": -0.7,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.49,
+        "trend": 0.5,
         "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "SOL",
-      "openTs": 1780275600000,
-      "resolveTs": 1780362000000,
-      "pct": -2.05,
+      "openTs": 1780315200000,
+      "resolveTs": 1780401600000,
+      "pct": -2.29,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.49,
+        "trend": 0.5,
         "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "BONK",
-      "openTs": 1780275600000,
-      "resolveTs": 1780362000000,
-      "pct": -0.92,
+      "openTs": 1780315200000,
+      "resolveTs": 1780401600000,
+      "pct": -0.18,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.49,
+        "trend": 0.5,
         "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "DOGE",
-      "openTs": 1780275600000,
-      "resolveTs": 1780362000000,
-      "pct": 0.28,
-      "outcome": 1,
+      "openTs": 1780315200000,
+      "resolveTs": 1780401600000,
+      "pct": -1.24,
+      "outcome": 0,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
@@ -698,9 +608,99 @@
     },
     {
       "token": "WIF",
-      "openTs": 1780268400000,
-      "resolveTs": 1780354800000,
-      "pct": 0,
+      "openTs": 1780308000000,
+      "resolveTs": 1780394400000,
+      "pct": 0.53,
+      "outcome": 1,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.51,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "BTC",
+      "openTs": 1780286400000,
+      "resolveTs": 1780372800000,
+      "pct": -3.7,
+      "outcome": 0,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.5,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "ETH",
+      "openTs": 1780286400000,
+      "resolveTs": 1780372800000,
+      "pct": -0.15,
+      "outcome": 0,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.5,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "SOL",
+      "openTs": 1780286400000,
+      "resolveTs": 1780372800000,
+      "pct": -1.95,
+      "outcome": 0,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.5,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "BONK",
+      "openTs": 1780286400000,
+      "resolveTs": 1780372800000,
+      "pct": -0.91,
+      "outcome": 0,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.51,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "DOGE",
+      "openTs": 1780286400000,
+      "resolveTs": 1780372800000,
+      "pct": -0.44,
+      "outcome": 0,
+      "calls": {
+        "coinflip": 0.5,
+        "momentum": 0.5,
+        "meanrev": 0.5,
+        "trend": 0.51,
+        "overconfident": 0.5,
+        "humble": 0.5
+      }
+    },
+    {
+      "token": "WIF",
+      "openTs": 1780279200000,
+      "resolveTs": 1780365600000,
+      "pct": -2.06,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -713,9 +713,9 @@
     },
     {
       "token": "BTC",
-      "openTs": 1780246800000,
-      "resolveTs": 1780333200000,
-      "pct": -2.82,
+      "openTs": 1780257600000,
+      "resolveTs": 1780344000000,
+      "pct": -3.1,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -728,9 +728,9 @@
     },
     {
       "token": "ETH",
-      "openTs": 1780246800000,
-      "resolveTs": 1780333200000,
-      "pct": -0.76,
+      "openTs": 1780257600000,
+      "resolveTs": 1780344000000,
+      "pct": -0.06,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -743,9 +743,9 @@
     },
     {
       "token": "SOL",
-      "openTs": 1780246800000,
-      "resolveTs": 1780333200000,
-      "pct": -1.13,
+      "openTs": 1780257600000,
+      "resolveTs": 1780344000000,
+      "pct": -1,
       "outcome": 0,
       "calls": {
         "coinflip": 0.5,
@@ -758,24 +758,24 @@
     },
     {
       "token": "BONK",
-      "openTs": 1780246800000,
-      "resolveTs": 1780333200000,
-      "pct": 2.59,
+      "openTs": 1780257600000,
+      "resolveTs": 1780344000000,
+      "pct": 1.28,
       "outcome": 1,
       "calls": {
         "coinflip": 0.5,
         "momentum": 0.5,
         "meanrev": 0.5,
-        "trend": 0.5,
+        "trend": 0.51,
         "overconfident": 0.5,
         "humble": 0.5
       }
     },
     {
       "token": "DOGE",
-      "openTs": 1780246800000,
-      "resolveTs": 1780333200000,
-      "pct": 0.69,
+      "openTs": 1780257600000,
+      "resolveTs": 1780344000000,
+      "pct": 0.76,
       "outcome": 1,
       "calls": {
         "coinflip": 0.5,

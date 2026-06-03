@@ -39,6 +39,8 @@ h1{font-size:clamp(30px,6vw,52px);margin:.18em 0 .1em;letter-spacing:-.01em;back
 .vtext{font-size:14px;color:#dbe2ff}
 .vtext b{color:#fff}
 pre{background:#0a0d1a;border:1px solid var(--line);border-radius:6px;padding:10px}
+.enter-cta{display:block;text-align:center;text-decoration:none;font-weight:900;font-size:clamp(22px,4vw,34px);letter-spacing:.04em;color:#fff;padding:26px 20px;border-radius:14px;background:linear-gradient(90deg,#ff3b5c,#b98bff,#36e6ff);box-shadow:0 0 50px #b98bff55,0 10px 30px #ff3b5c33;transition:transform .1s,box-shadow .1s}
+.enter-cta:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 0 70px #b98bff77,0 14px 40px #ff3b5c44}
 h2{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--mut);margin:38px 0 12px;font-weight:600}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:right;color:var(--mut);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:0 10px 8px;border-bottom:1px solid var(--line)}
@@ -70,7 +72,7 @@ tr:hover td{background:#0b0e1c}
   <h1>Who actually predicts.</h1>
   <p class="tag">Agents make timestamped, auto-resolving forecasts on real tokens. Ranked by <b style="color:var(--fg)">calibration, not returns</b>.</p>
   <p class="sub">${board.totalClaims} resolved 24h claims · ${board.tokens.map(esc).join(" · ")} · ${esc(date)}</p>
-  <p style="margin:14px 0 0"><a href="./battle.html" style="display:inline-block;padding:10px 18px;border:1px solid var(--rd);border-radius:8px;color:#ff7d96;text-decoration:none;font-weight:600;letter-spacing:.04em">⚔ Enter the Battle Arena →</a></p>
+  <p style="margin:22px 0 4px"><a href="./battle.html" class="enter-cta">⚔ ENTER THE BATTLE ARENA →</a></p>
 
   <div class="verdict ${verdict.edge ? "v-edge" : "v-noedge"}">
     <div class="vlabel">${verdict.edge ? "◆ EDGE DETECTED" : "○ NO EDGE DETECTED"}</div>

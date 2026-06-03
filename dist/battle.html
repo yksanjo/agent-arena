@@ -167,9 +167,13 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
     <div class="gcard">
       <div class="gtag">◇ SOAG · one agent · one arena</div>
       <div class="gtitle">Commit to enter</div>
-      <div class="gsub" style="margin-top:12px">Stake <b>100,000 ◇ $SOAG</b> in one transaction. Then smash freely — every pump draws from your committed stack <b>instantly</b>, no signing, no waiting. Spend it across the night's rounds.</div>
-      <button class="commit" id="commit">⟡ Commit 100,000 ◇</button>
-      <div class="gfoot">Non-custodial for real: your $SOAG sits in on-chain escrow you withdraw anytime. <span style="color:#3a3460">(demo: no wallet, mock funds)</span></div>
+      <div class="gsub" style="margin-top:12px">Stake <b>100,000 ◇ $SOAG</b> to enter. Then smash freely — every pump draws from your committed stack <b>instantly</b>, no signing, no waiting. Spend it across the night's rounds.</div>
+      <button class="commit" id="connectBtn">🔗 Connect Wallet</button>
+      <div id="walletBox" style="display:none">
+        <div id="walletLine" style="font-size:12px;color:#c8d0f0;margin-bottom:14px"></div>
+        <button class="commit" id="commit">⟡ Commit 100,000 ◇</button>
+      </div>
+      <div class="gfoot">Non-custodial: your $SOAG will sit in on-chain escrow you withdraw anytime. <span id="gateNote" style="color:#3a3460">Wallet + balance are live; deposit/withdraw run on the escrow (next build).</span></div>
     </div>
   </div>
 </div>
@@ -233,6 +237,40 @@ $("pump").addEventListener("click", () => {
   const [fx1, fy1] = fighterXY($("youF")); burst(fx1, fy1, "54,230,255", 14, 1);
   $("youF").style.setProperty("--pulse", "1"); youPulse = 1; addShake(0.1);
   blip(420 + Math.min(700, S.stake / 80), 0.06); floatText("+" + fmt(PUMP) + " ◇"); syncHUD();
+});
+
+// ---- real wallet connect + real $SOAG balance (read-only, no funds move yet) ----
+const SOAG_MINT = "ADue87cPcDhsyGq2hrDsukp7j8AFTSnaYHSanDATpump";
+const RPC = "https://api.mainnet-beta.solana.com";
+let WALLET = null, SOAG_BAL = null;
+
+async function soagBalance(owner) {
+  const body = { jsonrpc: "2.0", id: 1, method: "getTokenAccountsByOwner",
+    params: [owner, { mint: SOAG_MINT }, { encoding: "jsonParsed" }] };
+  const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  let total = 0;
+  for (const acc of j?.result?.value || []) total += acc.account.data.parsed.info.tokenAmount.uiAmount || 0;
+  return total;
+}
+
+$("connectBtn").addEventListener("click", async () => {
+  const prov = window.phantom?.solana || (window.solana?.isPhantom ? window.solana : null);
+  if (!prov) { window.open("https://phantom.app/", "_blank"); return; }
+  $("connectBtn").textContent = "Connecting…"; $("connectBtn").disabled = true;
+  try {
+    const res = await prov.connect();
+    WALLET = res.publicKey.toString();
+    $("walletLine").innerHTML = `✓ <b>${WALLET.slice(0, 4)}…${WALLET.slice(-4)}</b> connected · checking $SOAG…`;
+    $("connectBtn").style.display = "none"; $("walletBox").style.display = "block";
+    try {
+      SOAG_BAL = await soagBalance(WALLET);
+      const enough = SOAG_BAL >= COMMIT;
+      $("walletLine").innerHTML = `✓ <b>${WALLET.slice(0, 4)}…${WALLET.slice(-4)}</b> · <b style="color:${enough ? "#3dffa2" : "#ff5a7a"}">${fmt(SOAG_BAL)} ◇ $SOAG</b>${enough ? "" : " — need 100,000 to commit"}`;
+    } catch (e) { $("walletLine").innerHTML = `✓ <b>${WALLET.slice(0, 4)}…${WALLET.slice(-4)}</b> connected · (couldn't read balance)`; }
+  } catch (e) {
+    $("connectBtn").textContent = "🔗 Connect Wallet"; $("connectBtn").disabled = false;
+  }
 });
 
 // ---- commit gate ----
