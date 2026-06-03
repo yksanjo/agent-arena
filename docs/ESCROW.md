@@ -1,13 +1,37 @@
 # Agent Battle Arena — Escrow & Settlement Design
 
 Status: DRAFT (design before code — this holds real money)
-Decision: **non-custodial** vault (chosen 2026-06-03)
+
+## Decisions (LOCKED 2026-06-03)
+
+- **Custody:** non-custodial vault — player deposits are program-owned and can
+  only ever return to the depositing wallet.
+- **Payout model:** **house-banked** — players bet against the house, not each
+  other. Winners are paid from a house liquidity pool.
+- **House edge:** **~5%** — a winning 50/50 pays **1.90×** stake, not 2×. This
+  is the house's revenue over volume and the reason the book is profitable
+  rather than break-even.
+- **Daily exposure cap:** **1,000,000 (units TBD: SOAG vs USD)** of *house
+  at-risk*, enforced by pausing NEW rounds once hit — never by capping a won
+  player's withdrawal (stranding a winner is unacceptable).
+- **Anti-gaming:** lock-bet-then-snapshot-price, single Pyth oracle, per-wallet
+  + global caps, min/max bet, rate limits, anomaly flags.
 
 ## Goal
 
 Let a player commit 100,000 $SOAG, spend it across fast 15s rounds, and withdraw
 their balance (winnings included) at any time — without anyone, including us,
-being able to take their funds.
+being able to take their *deposit*. The house liquidity pool is funded by us and
+bounded by the daily exposure cap.
+
+## House solvency model
+
+The house wins ~5% of staked volume in expectation (the edge) but takes variance
+each round. The daily exposure cap bounds worst-case loss per day. Concretely:
+once the sum of *potential payouts on open rounds* would exceed the cap, no new
+bets are accepted until rounds settle / the day rolls. This guarantees the house
+can always cover every open position. Skilled players who beat short-horizon
+price moves are the main threat to the edge — see anti-gaming.
 
 ## Honest trust model (read this first)
 
@@ -73,6 +97,11 @@ user funds) while being buildable. We do not claim "fully trustless."
 - [ ] Integer over/underflow guards on every balance math op.
 - [ ] No `unwrap()`/panics on attacker-controlled input.
 - [ ] Re-entrancy / double-settle within one round impossible.
+- [ ] Bets lock BEFORE the resolution price is sampled (no peeking the move).
+- [ ] Daily house exposure cap enforced; new rounds pause at the cap.
+- [ ] Per-wallet + global bet caps and rate limits enforced server-side.
+- [ ] House liquidity pool always covers all open positions (solvency invariant).
+- [ ] Payout uses the 1.90× edge consistently; no path pays full 2×.
 
 ## Build path (devnet first — NO real $SOAG until the end)
 

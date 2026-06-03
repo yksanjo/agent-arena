@@ -134,7 +134,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 
       <div class="vsbadge">
         <div class="x">VS</div>
-        <div class="pot"><div class="n" id="pot">◇ 5,000</div><div class="l">pot</div></div>
+        <div class="pot"><div class="n" id="pot">◇ 0</div><div class="l">to win · 1.90×</div></div>
       </div>
 
       <div class="fighter foe" id="foeF">
@@ -143,7 +143,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
             <div class="fstat"><span class="elo" id="foeElo">1016</span><span class="rec" id="foeRec">58–62</span></div></div>
         </div>
         <div class="stakebar" style="opacity:.5"><div class="stakefill" id="foefill" style="width:50%"></div></div>
-        <div class="stakenum" id="foenum">◇ 5,000 field</div>
+        <div class="stakenum" id="foenum">calls DOWN · the field</div>
       </div>
 
       <div class="live"><div class="livepct" id="livepct"></div></div>
@@ -156,7 +156,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 
     <div class="dock">
       <button class="pump" id="pump" disabled>Pump<span class="pp">+2,500 ◇</span></button>
-      <div class="note">Undercard: a fast <b>15s</b> round on SOL, settled by the live price. Pumping stakes ◇ on KIRA for this round and grows your slice of the pot — it <b>never</b> changes her odds. Burn your stack across the rounds while the 24h main event plays out above.</div>
+      <div class="note">Fast <b>15s</b> round, settled by the live price. Pump to stake on KIRA — a win <b>pays 1.90×</b> (5% house edge), a miss loses the stake. Pumping grows your bet, <b>never</b> her odds. The house caps daily exposure so the book stays solvent.</div>
     </div>
   </div>
 
@@ -181,7 +181,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 <script>
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
-const COMMIT = 100000, PUMP = 2500;
+const COMMIT = 100000, PUMP = 2500, PAYOUT = 1.9; // 1.9x = ~5% house edge on a 50/50
 const BET = 7, LIVE = 5, IMPACT = 0.4, SETTLE = 2.6; // seconds
 const S = { bal: 0, stake: 0, field: 5000, committed: false, phase: "bet", pt: 0, winner: null, target: 0 };
 
@@ -212,9 +212,8 @@ let shake = 0; const addShake = (v) => shake = Math.min(0.8, shake + v);
 // ---- HUD ----
 function syncHUD() {
   $("bal").textContent = fmt(S.bal);
-  $("pot").textContent = "◇ " + fmt(S.stake + S.field);
+  $("pot").textContent = "◇ " + fmt(Math.round(S.stake * PAYOUT)); // what a win pays back
   $("stakenum").textContent = "◇ " + fmt(S.stake) + " staked";
-  $("foenum").textContent = "◇ " + fmt(S.field) + " field";
   const frac = (S.stake + S.field) ? S.stake / (S.stake + S.field) : 0;
   $("stakefill").style.width = (frac * 100).toFixed(1) + "%";
   $("foefill").style.width = ((1 - frac) * 100).toFixed(1) + "%";
@@ -295,7 +294,8 @@ function settle() {
   if (S.stake <= 0) {
     toast(won ? "KIRA TAKES IT" : "FIELD TAKES IT", `You sat out. SOL ${move}.`, won ? "win" : "lose");
   } else if (won) {
-    S.bal += S.stake + S.field; toast("KIRA WINS", `SOL ${move}. You take the pot: +◇ ${fmt(S.field)}.`, "win");
+    const payout = Math.round(S.stake * PAYOUT), net = payout - S.stake;
+    S.bal += payout; toast("KIRA WINS", `SOL ${move}. Pays ${PAYOUT}× → +◇ ${fmt(net)}.`, "win");
     const [cx, cy] = fighterXY($("youF")); burst(cx, cy, "61,255,162", 80, 1.5);
     blip(660, 0.2, "triangle", 0.06); setTimeout(() => blip(900, 0.24, "triangle", 0.05), 110);
   } else {
