@@ -65,15 +65,26 @@ pub mod arena_vault {
         Ok(())
     }
 
-    /// Apply a settled round. Only the settlement authority may call it. Moves
-    /// real tokens between the two pools so custody and accounting agree.
-    /// TODO(hardening, THREATS.md #1): compute the outcome from on-chain Pyth
-    /// here (with the dead-band) instead of trusting `player_won`.
-    pub fn settle_round(ctx: Context<SettleRound>, stake: u64, reserved: u64, player_won: bool, voided: bool) -> Result<()> {
+    /// Apply a settled round. Only the settlement authority may call it. The
+    /// OUTCOME is DERIVED ON-CHAIN from the open/close prices + the dead-band —
+    /// the authority cannot claim a win/void that the prices don't support.
+    ///   * |move| < deadband_bps  -> VOID (refund, nothing moves)
+    ///   * else player_won = (bet_up == close>open)
+    /// TODO(devnet hardening, THREATS.md #1): replace the passed-in open/close
+    /// prices with reads from on-chain Pyth PriceUpdateV2 accounts, so the price
+    /// VALUES are un-fakeable too. The dead-band/outcome rule below is unchanged.
+    pub fn settle_round(ctx: Context<SettleRound>, open_price: i64, close_price: i64, deadband_bps: u32, bet_up: bool, stake: u64, reserved: u64) -> Result<()> {
         require!(!ctx.accounts.vault.paused, VaultError::Paused);
-        if voided {
-            return Ok(()); // dead-band: stake stays with the player, nothing moves
+        require!(open_price > 0 && close_price > 0, VaultError::BadPrice);
+
+        // dead-band: signed basis-point move = (close-open)/open * 10000
+        let move_bps = ((close_price as i128) - (open_price as i128))
+            .checked_mul(10_000).ok_or(VaultError::Math)? / (open_price as i128);
+        if move_bps.unsigned_abs() < deadband_bps as u128 {
+            return Ok(()); // VOID: sub-dead-band move, stake stays with the player
         }
+        let player_won = bet_up == (close_price > open_price);
+
         let decimals = ctx.accounts.soag_mint.decimals;
         let bump = [ctx.accounts.vault.bump];
         let seeds: &[&[&[u8]]] = &[&[b"vault", &bump]];
@@ -269,4 +280,5 @@ pub enum VaultError {
     #[msg("house vault cannot cover the win")] InsolventHouse,
     #[msg("mint has a freeze authority")] MintHasFreezeAuthority,
     #[msg("caller is not the settlement authority")] Unauthorized,
+    #[msg("price must be > 0")] BadPrice,
 }

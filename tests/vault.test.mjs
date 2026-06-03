@@ -90,35 +90,38 @@ async function main() {
     ok((await bal(depositsVault)) >= n(vv.totalClaims), `INVARIANT ok — ${label}`);
   };
 
-  const settle = (stake, reserved, won, voided, signer = authority) => program.methods
-    .settleRound(new BN(stake), new BN(reserved), won, voided)
+  // settle now DERIVES the outcome on-chain from prices + dead-band (15 bps).
+  // open/close are scaled prices (e.g. 10000 = $100.00). bet_up = player backs "up".
+  const DB = 15;
+  const settle = (openP, closeP, betUp, stake, reserved, signer = authority) => program.methods
+    .settleRound(new BN(openP), new BN(closeP), DB, betUp, new BN(stake), new BN(reserved))
     .accountsPartial({ vault: vaultPda, authority: signer.publicKey, soagMint: mint, playerBalance: balancePda, owner: player.publicKey, depositsVault, houseVault, tokenProgram: TOKEN_2022_PROGRAM_ID })
     .signers([signer]).rpc();
 
-  // --- settle WIN: house PAYS 850 into the deposits pool ---
-  await settle(1_000, 850, true, false);
+  // --- settle WIN: player backs UP, price goes UP (+200bps) -> house pays 850 ---
+  await settle(10_000, 10_200, true, 1_000, 850);
   pb = await program.account.playerBalance.fetch(balancePda);
   ok(n(pb.balance) === 5_850, "settle WIN: balance grows by the 1.7x net win (850)");
   ok((await bal(houseVault)) === 9_150 && (await bal(depositsVault)) === 5_850, "settle WIN: tokens moved house_vault -> deposits_vault");
   await invariant("after win");
 
-  // --- settle LOSS: stake 1000 moves deposits -> house ---
-  await settle(1_000, 850, false, false);
+  // --- settle LOSS: player backs UP, price goes DOWN -> stake moves to house ---
+  await settle(10_000, 9_800, true, 1_000, 850);
   pb = await program.account.playerBalance.fetch(balancePda);
   ok(n(pb.balance) === 4_850, "settle LOSS: stake debited from balance");
   ok((await bal(houseVault)) === 10_150 && (await bal(depositsVault)) === 4_850, "settle LOSS: tokens moved deposits_vault -> house_vault");
   await invariant("after loss");
 
-  // --- VOID (dead-band) moves nothing ---
+  // --- VOID via DEAD-BAND: a +5bps move (< 15bps) refunds, nothing moves ---
   const beforeBal = n((await program.account.playerBalance.fetch(balancePda)).balance);
   const beforeHouse = await bal(houseVault);
-  await settle(1_000, 850, false, true);
-  ok(n((await program.account.playerBalance.fetch(balancePda)).balance) === beforeBal && (await bal(houseVault)) === beforeHouse, "settle VOID: nothing moves (dead-band refund)");
+  await settle(10_000, 10_005, true, 1_000, 850); // +5 bps -> under dead-band -> VOID
+  ok(n((await program.account.playerBalance.fetch(balancePda)).balance) === beforeBal && (await bal(houseVault)) === beforeHouse, "settle VOID: sub-dead-band move refunds, nothing moves");
 
   // --- SECURITY: a stranger cannot settle (drain) ---
   const attacker = Keypair.generate();
   await airdrop(attacker.publicKey, 1);
-  await expectFail(settle(1_000_000, 1_000_000, true, false, attacker), "unauthorized settle is rejected");
+  await expectFail(settle(10_000, 20_000, true, 1_000_000, 1_000_000, attacker), "unauthorized settle is rejected");
 
   // --- SECURITY: cannot withdraw more than balance ---
   await expectFail(program.methods.withdraw(new BN(999_999_999)).accountsPartial({
