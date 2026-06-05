@@ -91,6 +91,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
 .rbtns{display:flex;gap:8px}
 .rbtn{flex:1;cursor:pointer;border:1px solid #28304e;background:#0d1224;color:var(--fg);border-radius:8px;padding:11px;font:700 12px ui-monospace,monospace}
 .rbtn.copy{border-color:var(--gr);color:var(--gr)}
+.rbtn.tg{border-color:#36e6ff;color:#36e6ff}
 .note b{color:var(--gr)}
 
 /* fx + toast */
@@ -184,7 +185,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:
       <div class="rrow"><span>Receipt</span><b id="rId">—</b></div>
       <div class="rrow"><span>Time</span><b id="rTime">—</b></div>
       <div class="rnote">Send this receipt to <b>@yksanjo</b> to claim your $SOAG (winnings or refund). Play-money beta — payouts are hand-run.</div>
-      <div class="rbtns"><button class="rbtn copy" id="rCopy">Copy receipt</button><button class="rbtn" id="rClose">Close</button></div>
+      <div class="rbtns"><button class="rbtn tg" id="rTg">✈ Send to claim</button><button class="rbtn copy" id="rCopy">Copy</button><button class="rbtn" id="rClose">Close</button></div>
     </div>
   </div>
 
@@ -403,6 +404,12 @@ $("cashout").addEventListener("click", () => {
 });
 function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return h; }
 $("rClose").addEventListener("click", () => $("rcpt").classList.remove("show"));
+$("rTg").addEventListener("click", () => {
+  // one-tap: open Telegram's share sheet pre-filled with the receipt so the
+  // player sends it to you (or the group) to claim — no backend needed.
+  const text = $("rcpt").dataset.full || "";
+  window.open("https://t.me/share/url?url=" + encodeURIComponent("https://arena.agentsoag.com/battle.html") + "&text=" + encodeURIComponent(text), "_blank");
+});
 $("rCopy").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText($("rcpt").dataset.full); $("rCopy").textContent = "Copied ✓"; setTimeout(() => $("rCopy").textContent = "Copy receipt", 1500); } catch (e) {}
 });
